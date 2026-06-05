@@ -15,7 +15,7 @@ async function init() {
     email TEXT,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('admin','staff','driver')),
+    role TEXT NOT NULL CHECK (role IN ('admin','superuser','staff','driver')),
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
@@ -67,6 +67,10 @@ async function init() {
 
   // --- Additive migrations (idempotent) ---
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS phone TEXT`);
+  await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS first_name TEXT`);
+  await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS last_name TEXT`);
+  await q(`ALTER TABLE users  DROP CONSTRAINT IF EXISTS users_role_check`);
+  await q(`ALTER TABLE users  ADD CONSTRAINT users_role_check CHECK (role IN ('admin','superuser','staff','driver'))`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS favorite_route_id INT REFERENCES routes(id) ON DELETE SET NULL`);
   await q(`ALTER TABLE routes ADD COLUMN IF NOT EXISTS capacity INT NOT NULL DEFAULT 9`);
 

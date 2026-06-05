@@ -5,25 +5,88 @@ const brand = require('./brand');
 const { q } = require('./db');
 const { tomorrowStr, prettyDate, esc } = require('./util');
 
-let transporter = null;
-function getTransport() {
-  if (transporter) return transporter;
-  if (!process.env.SMTP_HOST) {
-    console.warn('[mailer] SMTP not configured — emails will be skipped');
-    return null;
+let cached = null; // { transporter, label }
+
+function fromAddr() { return process.env.MAIL_FROM || process.env.SMTP_USER; }
+
+function buildConfigs() {
+  const host = process.env.SMTP_HOST;
+  if (!host) return [];
+  const auth = process.env.SMTP_USER
+    ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined;
+  const hosts = [host];
+  if (!/^mail\./i.test(host)) hosts.push('mail.' + host);
+  const cfgPort = parseInt(process.env.SMTP_PORT || '587', 10);
+  const cfgSecure = process.env.SMTP_SECURE === 'true';
+  const ports = [
+    { port: cfgPort, secure: cfgSecure },
+    { port: 587, secure: false },
+    { port: 465, secure: true },
+  ];
+  const list = [], seen = new Set();
+  for (const h of hosts) for (const p of ports) {
+    const key = `${h}:${p.port}:${p.secure}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    list.push({
+      host: h, port: p.port, secure: p.secure, auth,
+      connectionTimeout: 8000, greetingTimeout: 8000, socketTimeout: 15000,
+      tls: { rejectUnauthorized: false },
+    });
   }
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
-  });
-  return transporter;
+  return list;
 }
+
+async function ensureTransport() {
+  if (cached) return cached;
+  const configs = buildConfigs();
+  if (!configs.length) { console.warn('[mailer] SMTP not configured'); return null; }
+  let lastErr;
+  for (const c of configs) {
+    try {
+      const t = nodemailer.createTransport(c);
+      await t.verify();
+      cached = { transporter: t, label: `${c.host}:${c.port} secure=${c.secure}` };
+      console.log('[mailer] using ' + cached.label);
+      return cached;
+    } catch (e) {
+      lastErr = e;
+      console.warn(`[mailer] ${c.host}:${c.port} secure=${c.secure} -> ${e.message}`);
+    }
+  }
+  throw lastErr || new Error('No SMTP configuration worked');
+}
+
 async function send(to, subject, html, attachments) {
-  const t = getTransport();
-  if (!t || !to) return { skipped: true };
-  return t.sendMail({ from: process.env.MAIL_FROM || process.env.SMTP_USER, to, subject, html, attachments: attachments || [] });
+  if (!to) return { skipped: true };
+  const ct = await ensureTransport();
+  if (!ct) return { skipped: true };
+  const payload = { from: fromAddr(), to, subject, html, attachments: attachments || [] };
+  try {
+    return await ct.transporter.sendMail(payload);
+  } catch (e) {
+    cached = null; // reset and retry once with fresh probe
+    const ct2 = await ensureTransport();
+    if (!ct2) throw e;
+    return ct2.transporter.sendMail(payload);
+  }
+}
+
+async function sendTest(to) {
+  if (!to) return { ok: false, error: 'Δώσε διεύθυνση email.' };
+  try {
+    const ct = await ensureTransport();
+    if (!ct) return { ok: false, error: 'Δεν έχουν οριστεί στοιχεία SMTP.' };
+    await ct.transporter.sendMail({
+      from: fromAddr(), to,
+      subject: 'CONDIAN Transfers — δοκιμαστικό email',
+      html: '<p>Δοκιμαστικό email από το σύστημα μεταφορών. Αν το βλέπεις, το SMTP δουλεύει!</p>',
+    });
+    return { ok: true, label: ct.label };
+  } catch (e) {
+    cached = null;
+    return { ok: false, error: e.message };
+  }
 }
 const wrap = (title, body) => {
   const C = brand.getColors();
@@ -89,4 +152,4 @@ async function sendDriverSummaries(workDate = tomorrowStr()) {
   return { drivers: drivers.length, sent, pending: pending.length };
 }
 
-module.exports = { send, sendStaffReminders, sendDriverSummaries };
+module.exports = { send, sendTest, sendStaffReminders, sendDriverSummaries };

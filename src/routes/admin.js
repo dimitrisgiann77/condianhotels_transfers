@@ -9,7 +9,8 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 3 * 1024 * 1024 } });
 const { tomorrowStr } = require('../util');
 
-router.use(requireRole('admin'));
+router.use(requireRole('admin', 'superuser'));
+const adminOnly = requireRole('admin'); // user management & branding
 
 router.get('/', async (req, res) => {
   const routes = await data.getRoutesWithStops(false);
@@ -69,27 +70,51 @@ router.post('/stop/:id/delete', async (req, res) => {
 });
 
 // ----- Users -----
-router.post('/user', async (req, res) => {
-  const { name, email, username, password, role } = req.body;
+function fullName(last, first) {
+  return [(last || '').trim(), (first || '').trim()].filter(Boolean).join(' ');
+}
+router.post('/user', adminOnly, async (req, res) => {
+  const { last_name, first_name, email, username, password, role } = req.body;
   try {
     const hash = await bcrypt.hash(password, 10);
-    await q(`INSERT INTO users (name,email,username,password_hash,role) VALUES ($1,$2,$3,$4,$5)`,
-      [name, email || null, username, hash, role]);
+    await q(`INSERT INTO users (name,last_name,first_name,email,phone,username,password_hash,role)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [fullName(last_name, first_name), last_name || null, first_name || null,
+       email || null, req.body.phone || null, username, hash, role]);
     res.redirect('/admin?msg=' + encodeURIComponent('Ο χρήστης προστέθηκε'));
   } catch (e) {
     res.redirect('/admin?msg=' + encodeURIComponent('Σφάλμα: το username υπάρχει ήδη;'));
   }
 });
-router.post('/user/:id/password', async (req, res) => {
+router.post('/user/bulk', adminOnly, async (req, res) => {
+  const arr = k => { const v = req.body[k]; return Array.isArray(v) ? v : (v == null ? [] : [v]); };
+  const last = arr('last_name'), first = arr('first_name'), un = arr('username'),
+        pw = arr('password'), role = arr('role'), email = arr('email'), phone = arr('phone');
+  let added = 0, skipped = 0;
+  for (let i = 0; i < un.length; i++) {
+    const u = (un[i] || '').trim(), p = (pw[i] || '').trim();
+    if (!u || !p) { if ((last[i] || first[i] || email[i])) skipped++; continue; }
+    try {
+      const hash = await bcrypt.hash(p, 10);
+      await q(`INSERT INTO users (name,last_name,first_name,email,phone,username,password_hash,role)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [fullName(last[i], first[i]), (last[i]||'').trim()||null, (first[i]||'').trim()||null,
+         (email[i]||'').trim()||null, (phone[i]||'').trim()||null, u, hash, (role[i]||'staff')]);
+      added++;
+    } catch (e) { skipped++; }
+  }
+  res.redirect('/admin?msg=' + encodeURIComponent(`Μαζική εισαγωγή: ${added} προστέθηκαν, ${skipped} παραλείφθηκαν`));
+});
+router.post('/user/:id/password', adminOnly, async (req, res) => {
   const hash = await bcrypt.hash(req.body.password, 10);
   await q('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, req.params.id]);
   res.redirect('/admin?msg=' + encodeURIComponent('Ο κωδικός άλλαξε'));
 });
-router.post('/user/:id/toggle', async (req, res) => {
+router.post('/user/:id/toggle', adminOnly, async (req, res) => {
   await q('UPDATE users SET active = NOT active WHERE id=$1', [req.params.id]);
   res.redirect('/admin');
 });
-router.post('/user/:id/delete', async (req, res) => {
+router.post('/user/:id/delete', adminOnly, async (req, res) => {
   await q('DELETE FROM users WHERE id=$1', [req.params.id]);
   res.redirect('/admin?msg=' + encodeURIComponent('Ο χρήστης διαγράφηκε'));
 });
@@ -126,12 +151,12 @@ router.post('/question/:id/answer', async (req, res) => {
 });
 
 // ----- Branding -----
-router.post('/branding/colors', async (req, res) => {
+router.post('/branding/colors', adminOnly, async (req, res) => {
   await brand.setColors(req.body);
   res.redirect('/admin?msg=' + encodeURIComponent('Τα χρώματα ενημερώθηκαν'));
 });
 const LOGO_MAP = { logo: 'logo', logo_white: 'logo-white', favicon: 'favicon' };
-router.post('/branding/logos',
+router.post('/branding/logos', adminOnly,
   upload.fields([{ name: 'logo' }, { name: 'logo_white' }, { name: 'favicon' }]),
   async (req, res) => {
     try {

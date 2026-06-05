@@ -10,13 +10,13 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand-wrap">
-      <img class="brand-logo" src="/brand/logo-white" onerror="this.onerror=null;this.src='/logo-mark.svg'" alt="CONDIAN Hotels" />
-      <div class="brand"><b>CONDIAN</b><span>SUMMER TRANSFERS 2026</span></div>
-    </div>
+    <a class="brand-wrap" href="/">
+      <img class="brand-logo" src="/brand/favicon" onerror="this.onerror=null;this.src='/logo-mark.svg'" alt="CONDIAN Hotels" />
+      <div class="brand"><b>CONDIAN</b></div>
+    </a>
     <% if (user) { %>
       <nav class="nav">
-        <% if (user.role === 'admin') { %>
+        <% if (user.role === 'admin' || user.role === 'superuser') { %>
           <a href="/admin">Διαχείριση</a>
           <a href="/admin/stats">Στατιστικά</a>
           <a href="/admin/questions">Ερωτήματα</a>

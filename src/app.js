@@ -209,13 +209,21 @@ app.get('/driver/export.pdf', requireRole('driver', 'admin'), async (req, res) =
 app.use('/admin', require('./routes/admin'));
 
 // Manual email triggers (admin only) — handy for testing.
-app.post('/admin/send/staff', requireRole('admin'), async (req, res) => {
+app.post('/admin/send/staff', requireRole('admin','superuser'), async (req, res) => {
   const r = await mailer.sendStaffReminders(req.body.date || tomorrowStr());
   res.redirect('/admin?msg=' + encodeURIComponent(`Υπενθυμίσεις προσωπικού: ${r.sent}/${r.pending}`));
 });
-app.post('/admin/send/driver', requireRole('admin'), async (req, res) => {
+app.post('/admin/send/driver', requireRole('admin','superuser'), async (req, res) => {
   const r = await mailer.sendDriverSummaries(req.body.date || tomorrowStr());
   res.redirect('/admin?msg=' + encodeURIComponent(`Emails οδηγών: ${r.sent}/${r.drivers}`));
+});
+app.post('/admin/test-email', requireRole('admin', 'superuser'), async (req, res) => {
+  const to = (req.body.email || '').trim();
+  const r = await mailer.sendTest(to);
+  const msg = r.ok
+    ? `Δοκιμαστικό email στάλθηκε σε ${to} (μέσω ${r.label}). Έλεγξε και τα spam.`
+    : `Αποτυχία αποστολής: ${r.error}`;
+  res.redirect('/admin?msg=' + encodeURIComponent(msg));
 });
 
 app.use((req, res) => res.status(404).render('error', { title: '404', message: 'Η σελίδα δεν βρέθηκε.' }));

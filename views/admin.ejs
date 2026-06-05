@@ -15,8 +15,15 @@
       </form>
     </div>
     <p class="muted small">Αυτόματα: προσωπικό 18:00, οδηγοί 23:00 (ώρα Ελλάδας).</p>
+    <h3>Δοκιμαστικό email</h3>
+    <form method="post" action="/admin/test-email" class="row">
+      <input name="email" type="email" placeholder="email για δοκιμή" required style="min-width:240px" />
+      <button class="btn">Αποστολή δοκιμής</button>
+    </form>
+    <p class="muted small">Στέλνει ένα δοκιμαστικό μήνυμα στη διεύθυνση που θα βάλεις και δείχνει εδώ το αποτέλεσμα/σφάλμα.</p>
   </div>
 
+  <% if (user.role === 'admin') { %>
   <div class="card">
     <h2>Branding — Χρώματα & Λογότυπα</h2>
     <form method="post" action="/admin/branding/colors">
@@ -46,6 +53,7 @@
       <a href="/brand/favicon" target="_blank">favicon</a>
     </p>
   </div>
+  <% } %>
 
   <div class="card">
     <h2>Δρομολόγια & στάσεις</h2>
@@ -54,7 +62,7 @@
         <div class="route-head">
           <strong><%= r.name %></strong>
           <span class="badge <%= r.active ? 'on':'off' %>"><%= r.active ? 'Ενεργό':'Ανενεργό' %></span>
-          <form method="post" action="/admin/route/<%= r.id %>/toggle" class="inline"><button class="link">Εναλλαγή</button></form>
+          <form method="post" action="/admin/route/<%= r.id %>/toggle" class="inline"><button class="link"><%= r.active ? 'Απενεργοποίηση' : 'Ενεργοποίηση' %></button></form>
           <form method="post" action="/admin/route/<%= r.id %>/delete" class="inline" onsubmit="return confirm('Διαγραφή δρομολογίου και στάσεων;')"><button class="link danger">Διαγραφή</button></form>
           <form method="post" action="/admin/route/<%= r.id %>/capacity" class="inline" style="margin-left:auto">
             <span class="muted small">Θέσεις:</span>
@@ -121,6 +129,7 @@
     </form>
   </div>
 
+  <% if (user.role === 'admin') { %>
   <div class="card">
     <h2>Χρήστες</h2>
     <table class="tbl">
@@ -132,7 +141,7 @@
           <td><%= u.role %></td>
           <td><%= u.active ? 'Ναι':'Όχι' %></td>
           <td class="nowrap">
-            <form method="post" action="/admin/user/<%= u.id %>/toggle" class="inline"><button class="link">Εναλλαγή</button></form>
+            <form method="post" action="/admin/user/<%= u.id %>/toggle" class="inline"><button class="link"><%= u.active ? 'Απενεργοποίηση' : 'Ενεργοποίηση' %></button></form>
             <form method="post" action="/admin/user/<%= u.id %>/password" class="inline" onsubmit="return promptPw(this)">
               <input type="hidden" name="password" />
               <button class="link">Κωδικός</button>
@@ -146,16 +155,53 @@
 
     <h3>Νέος χρήστης</h3>
     <form method="post" action="/admin/user" class="grid2">
-      <div><label>Όνομα</label><input name="name" required /></div>
-      <div><label>Email</label><input name="email" type="email" /></div>
+      <div><label>Επώνυμο</label><input name="last_name" required /></div>
+      <div><label>Όνομα</label><input name="first_name" required /></div>
       <div><label>Username</label><input name="username" required /></div>
       <div><label>Κωδικός</label><input name="password" required /></div>
+      <div><label>Email</label><input name="email" type="email" /></div>
+      <div><label>Κινητό</label><input name="phone" /></div>
       <div><label>Ρόλος</label>
-        <select name="role"><option value="staff">Προσωπικό</option><option value="driver">Οδηγός</option><option value="admin">Admin</option></select>
+        <select name="role"><option value="staff">Προσωπικό</option><option value="driver">Οδηγός</option><option value="superuser">Superuser</option><option value="admin">Admin</option></select>
       </div>
       <div class="end"><button class="btn primary">Προσθήκη</button></div>
     </form>
   </div>
+
+  <div class="card">
+    <h2>Μαζική εισαγωγή χρηστών</h2>
+    <p class="muted small">Συμπλήρωσε όσες γραμμές θες και πάτα «Εισαγωγή όλων». Γραμμές χωρίς username/κωδικό αγνοούνται.</p>
+    <form method="post" action="/admin/user/bulk">
+      <div id="bulkRows">
+        <% for (var bi=0; bi<5; bi++) { %>
+        <div class="grid2" style="margin-bottom:6px">
+          <input name="last_name" placeholder="Επώνυμο" />
+          <input name="first_name" placeholder="Όνομα" />
+          <input name="username" placeholder="Username" />
+          <input name="password" placeholder="Κωδικός" />
+          <input name="email" placeholder="Email" />
+          <input name="phone" placeholder="Κινητό" />
+          <select name="role"><option value="staff">Προσωπικό</option><option value="driver">Οδηγός</option><option value="superuser">Superuser</option><option value="admin">Admin</option></select>
+        </div>
+        <% } %>
+      </div>
+      <button type="button" class="btn" onclick="addBulkRow()">+ Προσθήκη γραμμής</button>
+      <button class="btn primary">Εισαγωγή όλων</button>
+    </form>
+    <template id="bulkTpl">
+      <div class="grid2" style="margin-bottom:6px">
+        <input name="last_name" placeholder="Επώνυμο" />
+        <input name="first_name" placeholder="Όνομα" />
+        <input name="username" placeholder="Username" />
+        <input name="password" placeholder="Κωδικός" />
+        <input name="email" placeholder="Email" />
+        <input name="phone" placeholder="Κινητό" />
+        <select name="role"><option value="staff">Προσωπικό</option><option value="driver">Οδηγός</option><option value="superuser">Superuser</option><option value="admin">Admin</option></select>
+      </div>
+    </template>
+    <script>function addBulkRow(){var t=document.getElementById('bulkTpl');document.getElementById('bulkRows').appendChild(t.content.cloneNode(true));}</script>
+  </div>
+  <% } %>
 
   <div class="card">
     <h2>Δρομολόγια ανά οδηγό</h2>

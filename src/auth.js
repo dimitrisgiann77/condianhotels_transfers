@@ -11,7 +11,7 @@ function requireRole(...roles) {
   };
 }
 function homeForRole(role) {
-  if (role === 'admin') return '/admin';
+  if (role === 'admin' || role === 'superuser') return '/admin';
   if (role === 'driver') return '/driver';
   return '/staff';
 }

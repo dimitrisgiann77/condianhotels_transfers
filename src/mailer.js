@@ -1,0 +1,92 @@
+const nodemailer = require('nodemailer');
+const data = require('./data');
+const pdf = require('./pdf');
+const brand = require('./brand');
+const { q } = require('./db');
+const { tomorrowStr, prettyDate, esc } = require('./util');
+
+let transporter = null;
+function getTransport() {
+  if (transporter) return transporter;
+  if (!process.env.SMTP_HOST) {
+    console.warn('[mailer] SMTP not configured — emails will be skipped');
+    return null;
+  }
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
+  });
+  return transporter;
+}
+async function send(to, subject, html, attachments) {
+  const t = getTransport();
+  if (!t || !to) return { skipped: true };
+  return t.sendMail({ from: process.env.MAIL_FROM || process.env.SMTP_USER, to, subject, html, attachments: attachments || [] });
+}
+const wrap = (title, body) => {
+  const C = brand.getColors();
+  return `
+  <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#222">
+    <h2 style="color:${C.navy};border-bottom:3px solid ${C.gold};padding-bottom:6px">CONDIAN Hotels — Summer Transfers 2026</h2>
+    <h3>${esc(title)}</h3>${body}
+    <p style="color:#888;font-size:12px;margin-top:24px">Αυτόματο μήνυμα από το σύστημα μεταφορών.</p>
+  </div>`;
+};
+
+// 18:00 — remind staff who have not declared for tomorrow.
+async function sendStaffReminders(workDate = tomorrowStr()) {
+  const pending = await data.getPendingStaff(workDate);
+  const url = process.env.PUBLIC_URL || '';
+  let sent = 0;
+  for (const p of pending) {
+    if (!p.email) continue;
+    const body = `
+      <p>Γεια σου ${esc(p.name)},</p>
+      <p>Δεν έχεις δηλώσει ακόμη τη βάρδιά σου για <b>${prettyDate(workDate)}</b> (αύριο).</p>
+      <p>Παρακαλώ μπες και δήλωσε αν εργάζεσαι ή έχεις ρεπό, και τη στάση παραλαβής σου.</p>
+      <p><a href="${esc(url)}/staff" style="background:#193847;color:#fff;padding:10px 16px;text-decoration:none;border-radius:6px">Δήλωση βάρδιας</a></p>`;
+    try { await send(p.email, `Υπενθύμιση: δήλωσε τη βάρδια σου για ${prettyDate(workDate)}`, wrap('Υπενθύμιση δήλωσης βάρδιας', body)); sent++; }
+    catch (e) { console.error('[mailer] staff reminder failed for', p.email, e.message); }
+  }
+  console.log(`[mailer] staff reminders: ${sent}/${pending.length} sent for ${workDate}`);
+  return { pending: pending.length, sent };
+}
+
+// 23:00 — send each driver the pickups for their route(s) + who is still pending.
+async function sendDriverSummaries(workDate = tomorrowStr()) {
+  const drivers = await data.getDrivers();
+  const pending = await data.getPendingStaff(workDate);
+  let sent = 0;
+  for (const drv of drivers) {
+    if (!drv.email) continue;
+    const routeIds = await data.getDriverRouteIds(drv.id);
+    const pickups = await data.getPickups(workDate, routeIds.length ? routeIds : null);
+    const rowsHtml = pickups.length
+      ? pickups.map(p => `<tr><td style="padding:4px 8px;border:1px solid #ddd">${esc(p.route || '')}</td><td style="padding:4px 8px;border:1px solid #ddd">${esc(p.stop || '')}</td><td style="padding:4px 8px;border:1px solid #ddd">${esc(p.pickup_time || '')}</td><td style="padding:4px 8px;border:1px solid #ddd">${esc(p.person)}</td></tr>`).join('')
+      : `<tr><td colspan="4" style="padding:8px;color:#888">Καμία δήλωση εργασίας.</td></tr>`;
+    const pendHtml = pending.length
+      ? `<ul>${pending.map(p => `<li>${esc(p.name)}</li>`).join('')}</ul>`
+      : '<p style="color:#0a0">Όλο το προσωπικό έχει δηλώσει.</p>';
+    const body = `
+      <p>Δρομολόγιο για <b>${prettyDate(workDate)}</b> (αύριο):</p>
+      <table style="border-collapse:collapse;width:100%;font-size:14px">
+        <tr style="background:#193847;color:#fff"><th style="padding:6px 8px;text-align:left">Δρομολόγιο</th><th style="padding:6px 8px;text-align:left">Στάση</th><th style="padding:6px 8px;text-align:left">Ώρα</th><th style="padding:6px 8px;text-align:left">Όνομα</th></tr>
+        ${rowsHtml}
+      </table>
+      <h4 style="color:#a60">Δεν δήλωσαν μέχρι τις 23:00 (${pending.length}):</h4>
+      ${pendHtml}`;
+    let attachments = [];
+    try {
+      const buf = await pdf.buildBuffer({ workDate, pickups, pending });
+      attachments = [{ filename: `transfers-${workDate}.pdf`, content: buf }];
+    } catch (e) { console.error('[mailer] PDF build failed:', e.message); }
+    try { await send(drv.email, `Πρόγραμμα παραλαβών — ${prettyDate(workDate)}`, wrap('Πρόγραμμα παραλαβών', body), attachments); sent++; }
+    catch (e) { console.error('[mailer] driver summary failed for', drv.email, e.message); }
+  }
+  console.log(`[mailer] driver summaries: ${sent}/${drivers.length} sent for ${workDate}`);
+  return { drivers: drivers.length, sent, pending: pending.length };
+}
+
+module.exports = { send, sendStaffReminders, sendDriverSummaries };

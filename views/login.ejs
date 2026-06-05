@@ -1,0 +1,16 @@
+<%- include('partials/header') %>
+  <div class="card login">
+    <img class="login-logo" src="/brand/logo" onerror="this.onerror=null;this.src='/logo-mark.svg'" alt="CONDIAN Hotels" />
+    <p class="login-title">CONDIAN</p>
+    <p class="login-sub">HOTELS</p>
+    <h1>Σύνδεση</h1>
+    <% if (error) { %><div class="alert err"><%= error %></div><% } %>
+    <form method="post" action="/login">
+      <label>Όνομα χρήστη</label>
+      <input name="username" autocomplete="username" required autofocus />
+      <label>Κωδικός</label>
+      <input name="password" type="password" autocomplete="current-password" required />
+      <button class="btn primary" type="submit">Είσοδος</button>
+    </form>
+  </div>
+<%- include('partials/footer') %>

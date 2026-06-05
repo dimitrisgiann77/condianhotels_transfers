@@ -1,0 +1,44 @@
+<%- include('partials/header') %>
+  <% if (saved === 'q') { %><div class="alert ok">Το ερώτημά σου στάλθηκε.</div><% } %>
+  <% if (saved === 'r') { %><div class="alert ok">Η αξιολόγησή σου καταχωρήθηκε. Ευχαριστούμε!</div><% } %>
+
+  <div class="card" style="max-width:620px">
+    <h1>Αξιολόγηση δρομολογίου</h1>
+    <form method="post" action="/feedback/rating">
+      <div class="grid2">
+        <div><label>Ημερομηνία</label><input type="date" name="work_date" value="<%= today %>" /></div>
+        <div><label>Δρομολόγιο</label>
+          <select name="route_id">
+            <option value="">—</option>
+            <% routes.forEach(function(r){ %><option value="<%= r.id %>" <%= favorite===r.id ? 'selected':'' %>><%= r.name %></option><% }) %>
+          </select>
+        </div>
+        <div><label>Οδηγός</label>
+          <select name="driver_id"><option value="">—</option>
+            <% drivers.forEach(function(d){ %><option value="<%= d.id %>"><%= d.name %></option><% }) %>
+          </select>
+        </div>
+      </div>
+      <div class="grid2">
+        <div><label>Δρομολόγιο (1-5)</label>
+          <select name="r_route"><option value="">—</option><% for(var i=5;i>=1;i--){ %><option value="<%= i %>"><%= i %> ★</option><% } %></select></div>
+        <div><label>Οδηγός (1-5)</label>
+          <select name="r_driver"><option value="">—</option><% for(var i=5;i>=1;i--){ %><option value="<%= i %>"><%= i %> ★</option><% } %></select></div>
+        <div><label>Όχημα (1-5)</label>
+          <select name="r_vehicle"><option value="">—</option><% for(var i=5;i>=1;i--){ %><option value="<%= i %>"><%= i %> ★</option><% } %></select></div>
+      </div>
+      <label>Σχόλιο (προαιρετικό)</label>
+      <textarea name="comment" rows="3" style="width:100%;padding:9px 10px;border:1px solid #ccc;border-radius:7px;font-family:inherit;font-size:15px"></textarea>
+      <button class="btn primary">Υποβολή αξιολόγησης</button>
+    </form>
+  </div>
+
+  <div class="card" style="max-width:620px">
+    <h2>Ερώτημα προς τη διοίκηση</h2>
+    <form method="post" action="/feedback/question">
+      <label>Το ερώτημά σου</label>
+      <textarea name="message" rows="3" required style="width:100%;padding:9px 10px;border:1px solid #ccc;border-radius:7px;font-family:inherit;font-size:15px"></textarea>
+      <button class="btn primary">Αποστολή ερωτήματος</button>
+    </form>
+  </div>
+<%- include('partials/footer') %>

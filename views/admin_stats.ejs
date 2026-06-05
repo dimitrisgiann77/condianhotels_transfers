@@ -1,0 +1,73 @@
+<%- include('partials/header') %>
+  <div class="card">
+    <h1>Στατιστικά</h1>
+    <div class="row">
+      <span class="muted">Περίοδος:</span>
+      <a class="btn" href="/admin/stats?days=7">7 ημ.</a>
+      <a class="btn" href="/admin/stats?days=30">30 ημ.</a>
+      <a class="btn" href="/admin/stats?days=90">90 ημ.</a>
+      <span class="muted">Τρέχον: <%= days %> ημέρες</span>
+    </div>
+    <div class="metrics" style="margin-top:12px">
+      <div class="metric"><div class="ml">Μ.Ο. Δρομολογίου</div><div class="mv"><%= avg.route_avg || '—' %></div></div>
+      <div class="metric"><div class="ml">Μ.Ο. Οδηγού</div><div class="mv"><%= avg.driver_avg || '—' %></div></div>
+      <div class="metric"><div class="ml">Μ.Ο. Οχήματος</div><div class="mv"><%= avg.vehicle_avg || '—' %></div></div>
+    </div>
+    <p class="muted small"><%= avg.n %> αξιολογήσεις (έως 90 ημ.)</p>
+  </div>
+
+  <div class="card">
+    <h2>Ανά δρομολόγιο</h2>
+    <table class="tbl">
+      <thead><tr><th>Δρομολόγιο</th><th>Όριο</th><th>Σύνολο δηλώσεων εργασίας</th><th>Ενεργές ημέρες</th></tr></thead>
+      <tbody>
+        <% routes.forEach(function(r){ %>
+          <tr><td><%= r.name %></td><td><%= r.capacity %></td><td><%= r.work_total %></td><td><%= r.active_days %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Ανά προσωπικό</h2>
+    <table class="tbl">
+      <thead><tr><th>Όνομα</th><th>Ημέρες εργασίας</th><th>Ρεπό</th></tr></thead>
+      <tbody>
+        <% staff.forEach(function(u){ %>
+          <tr><td><%= u.name %></td><td><%= u.work_days %></td><td><%= u.off_days %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Αξιολόγηση ανά οδηγό</h2>
+    <% if (byDriver.length === 0) { %><p class="muted">Καμία αξιολόγηση ακόμη.</p><% } else { %>
+      <table class="tbl">
+        <thead><tr><th>Οδηγός</th><th>Μ.Ο.</th><th>Πλήθος</th></tr></thead>
+        <tbody><% byDriver.forEach(function(d){ %><tr><td><%= d.driver %></td><td><%= d.avg %> ★</td><td><%= d.n %></td></tr><% }) %></tbody>
+      </table>
+    <% } %>
+  </div>
+
+  <div class="card">
+    <h2>Πρόσφατα σχόλια & αξιολογήσεις</h2>
+    <% if (recent.length === 0) { %><p class="muted">Καμία αξιολόγηση ακόμη.</p><% } else { %>
+      <table class="tbl">
+        <thead><tr><th>Ημ/νία</th><th>Από</th><th>Δρομολόγιο</th><th>Οδηγός</th><th>Δ/Ο/Οχ</th><th>Σχόλιο</th></tr></thead>
+        <tbody>
+        <% recent.forEach(function(r){ %>
+          <tr>
+            <td class="nowrap"><%= r.work_date ? prettyDate(String(r.work_date).slice(0,10)) : '' %></td>
+            <td><%= r.person %></td>
+            <td><%= r.route || '' %></td>
+            <td><%= r.driver_name || '' %></td>
+            <td class="nowrap"><%= r.r_route||'-' %>/<%= r.r_driver||'-' %>/<%= r.r_vehicle||'-' %></td>
+            <td><%= r.comment || '' %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+<%- include('partials/footer') %>

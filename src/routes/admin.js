@@ -1,0 +1,151 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const router = express.Router();
+const { q } = require('../db');
+const data = require('../data');
+const { requireRole } = require('../auth');
+const brand = require('../brand');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 3 * 1024 * 1024 } });
+const { tomorrowStr } = require('../util');
+
+router.use(requireRole('admin'));
+
+router.get('/', async (req, res) => {
+  const routes = await data.getRoutesWithStops(false);
+  const { rows: users } = await q('SELECT id,name,email,username,role,active FROM users ORDER BY role, name');
+  const drivers = users.filter(u => u.role === 'driver');
+  const driverRoutes = {};
+  for (const d of drivers) driverRoutes[d.id] = await data.getDriverRouteIds(d.id);
+  res.render('admin', {
+    routes, users, drivers, driverRoutes, colors: brand.getColors(),
+    allRoutes: routes,
+    msg: req.query.msg || null,
+    tomorrow: tomorrowStr(),
+    editStop: req.query.stop ? routes.flatMap(r => r.stops).find(s => String(s.id) === req.query.stop) : null,
+  });
+});
+
+// ----- Routes -----
+router.post('/route', async (req, res) => {
+  const { name, sort_order, capacity } = req.body;
+  await q('INSERT INTO routes (name, sort_order, capacity) VALUES ($1,$2,$3)',
+    [name, parseInt(sort_order || '0', 10), parseInt(capacity || '9', 10)]);
+  res.redirect('/admin?msg=' + encodeURIComponent('Το δρομολόγιο προστέθηκε'));
+});
+router.post('/route/:id/capacity', async (req, res) => {
+  await q('UPDATE routes SET capacity=$1 WHERE id=$2', [parseInt(req.body.capacity || '9', 10), req.params.id]);
+  res.redirect('/admin?msg=' + encodeURIComponent('Το όριο θέσεων ενημερώθηκε'));
+});
+router.post('/route/:id/delete', async (req, res) => {
+  await q('DELETE FROM routes WHERE id=$1', [req.params.id]);
+  res.redirect('/admin?msg=' + encodeURIComponent('Το δρομολόγιο διαγράφηκε'));
+});
+router.post('/route/:id/toggle', async (req, res) => {
+  await q('UPDATE routes SET active = NOT active WHERE id=$1', [req.params.id]);
+  res.redirect('/admin');
+});
+
+// ----- Stops -----
+router.post('/stop', async (req, res) => {
+  const { route_id, name, pickup_time, sort_order, lat, lng } = req.body;
+  await q(`INSERT INTO stops (route_id,name,pickup_time,sort_order,lat,lng)
+           VALUES ($1,$2,$3,$4,$5,$6)`,
+    [route_id, name, pickup_time || null, parseInt(sort_order || '0', 10),
+     lat ? parseFloat(lat) : null, lng ? parseFloat(lng) : null]);
+  res.redirect('/admin?msg=' + encodeURIComponent('Η στάση προστέθηκε'));
+});
+router.post('/stop/:id', async (req, res) => {
+  const { name, pickup_time, sort_order, lat, lng, route_id } = req.body;
+  await q(`UPDATE stops SET name=$1, pickup_time=$2, sort_order=$3, lat=$4, lng=$5, route_id=COALESCE($6, route_id) WHERE id=$7`,
+    [name, pickup_time || null, parseInt(sort_order || '0', 10),
+     lat ? parseFloat(lat) : null, lng ? parseFloat(lng) : null,
+     route_id ? parseInt(route_id, 10) : null, req.params.id]);
+  res.redirect('/admin?msg=' + encodeURIComponent('Η στάση ενημερώθηκε'));
+});
+router.post('/stop/:id/delete', async (req, res) => {
+  await q('DELETE FROM stops WHERE id=$1', [req.params.id]);
+  res.redirect('/admin?msg=' + encodeURIComponent('Η στάση διαγράφηκε'));
+});
+
+// ----- Users -----
+router.post('/user', async (req, res) => {
+  const { name, email, username, password, role } = req.body;
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    await q(`INSERT INTO users (name,email,username,password_hash,role) VALUES ($1,$2,$3,$4,$5)`,
+      [name, email || null, username, hash, role]);
+    res.redirect('/admin?msg=' + encodeURIComponent('Ο χρήστης προστέθηκε'));
+  } catch (e) {
+    res.redirect('/admin?msg=' + encodeURIComponent('Σφάλμα: το username υπάρχει ήδη;'));
+  }
+});
+router.post('/user/:id/password', async (req, res) => {
+  const hash = await bcrypt.hash(req.body.password, 10);
+  await q('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, req.params.id]);
+  res.redirect('/admin?msg=' + encodeURIComponent('Ο κωδικός άλλαξε'));
+});
+router.post('/user/:id/toggle', async (req, res) => {
+  await q('UPDATE users SET active = NOT active WHERE id=$1', [req.params.id]);
+  res.redirect('/admin');
+});
+router.post('/user/:id/delete', async (req, res) => {
+  await q('DELETE FROM users WHERE id=$1', [req.params.id]);
+  res.redirect('/admin?msg=' + encodeURIComponent('Ο χρήστης διαγράφηκε'));
+});
+
+// ----- Driver -> routes assignment -----
+router.post('/driver/:id/routes', async (req, res) => {
+  const did = req.params.id;
+  let ids = req.body.route_ids || [];
+  if (!Array.isArray(ids)) ids = [ids];
+  await q('DELETE FROM driver_routes WHERE driver_id=$1', [did]);
+  for (const rid of ids) await q('INSERT INTO driver_routes (driver_id,route_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [did, rid]);
+  res.redirect('/admin?msg=' + encodeURIComponent('Τα δρομολόγια οδηγού ενημερώθηκαν'));
+});
+
+// ----- Stats -----
+router.get('/stats', async (req, res) => {
+  const days = parseInt(req.query.days || '30', 10);
+  const [routes, staff, avg, byDriver, recent] = await Promise.all([
+    data.routeStats(days), data.staffStats(days), data.ratingAverages(Math.max(days,90)),
+    data.ratingByDriver(Math.max(days,90)), data.recentRatings(20),
+  ]);
+  res.render('admin_stats', { days, routes, staff, avg, byDriver, recent });
+});
+
+// ----- Questions -----
+router.get('/questions', async (req, res) => {
+  const questions = await data.listQuestions();
+  res.render('admin_questions', { questions, msg: req.query.msg || null });
+});
+router.post('/question/:id/answer', async (req, res) => {
+  await q('UPDATE questions SET answer=$1, answered_at=now() WHERE id=$2',
+    [(req.body.answer || '').trim() || null, req.params.id]);
+  res.redirect('/admin/questions?msg=' + encodeURIComponent('Η απάντηση αποθηκεύτηκε'));
+});
+
+// ----- Branding -----
+router.post('/branding/colors', async (req, res) => {
+  await brand.setColors(req.body);
+  res.redirect('/admin?msg=' + encodeURIComponent('Τα χρώματα ενημερώθηκαν'));
+});
+const LOGO_MAP = { logo: 'logo', logo_white: 'logo-white', favicon: 'favicon' };
+router.post('/branding/logos',
+  upload.fields([{ name: 'logo' }, { name: 'logo_white' }, { name: 'favicon' }]),
+  async (req, res) => {
+    try {
+      for (const field of Object.keys(LOGO_MAP)) {
+        const f = req.files && req.files[field] && req.files[field][0];
+        if (f && /^image\//.test(f.mimetype)) {
+          await brand.setAsset(LOGO_MAP[field], f.mimetype, f.buffer);
+        }
+      }
+      res.redirect('/admin?msg=' + encodeURIComponent('Τα λογότυπα ενημερώθηκαν'));
+    } catch (e) {
+      console.error('[branding] upload failed', e.message);
+      res.redirect('/admin?msg=' + encodeURIComponent('Σφάλμα στο ανέβασμα λογοτύπου'));
+    }
+  });
+
+module.exports = router;

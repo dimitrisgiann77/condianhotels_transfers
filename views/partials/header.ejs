@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/brand.css" />
+  <link rel="icon" href="/brand/favicon" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-wrap">
+      <img class="brand-logo" src="/brand/logo-white" onerror="this.onerror=null;this.src='/logo-mark.svg'" alt="CONDIAN Hotels" />
+      <div class="brand"><b>CONDIAN</b><span>SUMMER TRANSFERS 2026</span></div>
+    </div>
+    <% if (user) { %>
+      <nav class="nav">
+        <% if (user.role === 'admin') { %>
+          <a href="/admin">Διαχείριση</a>
+          <a href="/admin/stats">Στατιστικά</a>
+          <a href="/admin/questions">Ερωτήματα</a>
+          <a href="/driver">Πρόγραμμα</a>
+        <% } else if (user.role === 'driver') { %>
+          <a href="/driver">Πρόγραμμα</a>
+        <% } else { %>
+          <a href="/staff">Η δήλωσή μου</a>
+          <a href="/feedback">Αξιολόγηση</a>
+        <% } %>
+        <a href="/profile">Προφίλ</a>
+        <span class="who"><%= user.name %></span>
+        <form method="post" action="/logout" class="inline"><button class="link">Έξοδος</button></form>
+      </nav>
+    <% } %>
+  </header>
+  <main class="container">

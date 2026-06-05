@@ -1,0 +1,22 @@
+<%- include('partials/header') %>
+  <% if (msg) { %><div class="alert ok"><%= msg %></div><% } %>
+  <div class="card">
+    <h1>Ερωτήματα προσωπικού</h1>
+    <% if (questions.length === 0) { %><p class="muted">Δεν υπάρχουν ερωτήματα.</p><% } %>
+    <% questions.forEach(function(q){ %>
+      <div class="route">
+        <div class="route-head">
+          <strong><%= q.person %></strong>
+          <span class="muted small"><%= q.person_email || '' %> · <%= new Date(q.created_at).toLocaleString('el-GR') %></span>
+          <% if (!q.answer) { %><span class="badge off">Αναπάντητο</span><% } else { %><span class="badge on">Απαντήθηκε</span><% } %>
+        </div>
+        <p style="margin:6px 0"><%= q.message %></p>
+        <form method="post" action="/admin/question/<%= q.id %>/answer">
+          <label>Απάντηση</label>
+          <textarea name="answer" rows="2" style="width:100%;padding:9px 10px;border:1px solid #ccc;border-radius:7px;font-family:inherit;font-size:14px"><%= q.answer || '' %></textarea>
+          <button class="btn">Αποθήκευση απάντησης</button>
+        </form>
+      </div>
+    <% }) %>
+  </div>
+<%- include('partials/footer') %>

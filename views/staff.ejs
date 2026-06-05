@@ -1,0 +1,86 @@
+<%- include('partials/header') %>
+  <div class="card">
+    <h1>Δήλωση βάρδιας</h1>
+    <% if (saved) { %><div class="alert ok">Η δήλωσή σου αποθηκεύτηκε.</div><% } %>
+    <% if (error === 'full') { %><div class="alert err">Το δρομολόγιο είναι πλήρες (όριο θέσεων). Διάλεξε άλλο δρομολόγιο.</div><% } %>
+    <form method="get" action="/staff" class="row">
+      <label>Ημερομηνία</label>
+      <input type="date" name="date" value="<%= workDate %>" min="<%= minDate %>" onchange="this.form.submit()" />
+    </form>
+
+    <form method="post" action="/staff" id="declForm">
+      <input type="hidden" name="work_date" value="<%= workDate %>" />
+
+      <label>Αύριο εργάζεσαι;</label>
+      <div class="seg">
+        <label class="opt"><input type="radio" name="status" value="work" <%= (mine && mine.status==='work')||!mine ? 'checked':'' %> onchange="toggleWork()"> Εργασία</label>
+        <label class="opt"><input type="radio" name="status" value="off" <%= mine && mine.status==='off' ? 'checked':'' %> onchange="toggleWork()"> Ρεπό</label>
+      </div>
+
+      <div id="workFields">
+        <label>Δρομολόγιο</label>
+        <select name="route_id" id="routeSel" onchange="fillStops()">
+          <option value="">— Διάλεξε δρομολόγιο —</option>
+          <% routes.forEach(function(r){ %>
+            <option value="<%= r.id %>" <%= (mine && mine.route_id===r.id) || (!mine && favorite===r.id) ? 'selected':'' %>><%= r.name %></option>
+          <% }) %>
+        </select>
+
+        <label>Στάση παραλαβής</label>
+        <select name="stop_id" id="stopSel" onchange="showTime()">
+          <option value="">— Διάλεξε στάση —</option>
+        </select>
+
+        <div class="timebox">Ώρα παραλαβής: <b id="timeOut">—</b></div>
+        <div class="timebox">Διαθέσιμες θέσεις: <b id="seatsOut">—</b></div>
+      </div>
+
+      <button class="btn primary" type="submit">Υποβολή δήλωσης</button>
+    </form>
+  </div>
+
+  <script>
+    const ROUTES = <%- JSON.stringify(routes) %>;
+    const MINE = <%- JSON.stringify(mine || null) %>;
+    const USAGE = <%- JSON.stringify(usage || {}) %>;
+    const FAVORITE = <%- JSON.stringify(favorite || null) %>;
+    function showSeats(){
+      const rid = document.getElementById('routeSel').value;
+      const r = ROUTES.find(x => String(x.id) === String(rid));
+      const out = document.getElementById('seatsOut');
+      if (!r) { out.textContent = '—'; return; }
+      const used = USAGE[r.id] || 0;
+      const mineHere = MINE && MINE.status==='work' && String(MINE.route_id)===String(r.id);
+      const remaining = Math.max(0, r.capacity - used + (mineHere ? 1 : 0));
+      out.textContent = remaining + ' / ' + r.capacity + (remaining===0 ? ' (πλήρες)' : '');
+    }
+    function fillStops(preselectStopId){
+      const rid = document.getElementById('routeSel').value;
+      const sel = document.getElementById('stopSel');
+      sel.innerHTML = '<option value="">— Διάλεξε στάση —</option>';
+      const r = ROUTES.find(x => String(x.id) === String(rid));
+      if (r) r.stops.forEach(s => {
+        const o = document.createElement('option');
+        o.value = s.id; o.textContent = s.name + (s.pickup_time ? ' — ' + s.pickup_time : '');
+        o.dataset.time = s.pickup_time || '';
+        if (preselectStopId && String(preselectStopId) === String(s.id)) o.selected = true;
+        sel.appendChild(o);
+      });
+      showTime();
+      showSeats();
+    }
+    function showTime(){
+      const sel = document.getElementById('stopSel');
+      const t = sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].dataset.time;
+      document.getElementById('timeOut').textContent = t || '—';
+    }
+    function toggleWork(){
+      const off = document.querySelector('input[name=status][value=off]').checked;
+      document.getElementById('workFields').style.display = off ? 'none' : 'block';
+    }
+    (function init(){
+      toggleWork();
+      if (MINE && MINE.route_id) { document.getElementById('routeSel').value = MINE.route_id; fillStops(MINE.stop_id); }
+    })();
+  </script>
+<%- include('partials/footer') %>

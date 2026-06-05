@@ -1,0 +1,22 @@
+<%- include('partials/header') %>
+  <div class="card" style="max-width:520px">
+    <h1>Το προφίλ μου</h1>
+    <% if (saved) { %><div class="alert ok">Το προφίλ αποθηκεύτηκε.</div><% } %>
+    <p class="muted small">Ονοματεπώνυμο: <b><%= me.name %></b> · Ρόλος: <%= me.role %> · Username: <%= me.username %></p>
+    <form method="post" action="/profile">
+      <label>Email επικοινωνίας</label>
+      <input type="email" name="email" value="<%= me.email || '' %>" placeholder="name@condian.gr" />
+      <label>Κινητό επικοινωνίας</label>
+      <input name="phone" value="<%= me.phone || '' %>" placeholder="69xxxxxxxx" />
+      <label>Αγαπημένο δρομολόγιο (προεπιλογή στη δήλωση)</label>
+      <select name="favorite_route_id">
+        <option value="">— Κανένα —</option>
+        <% routes.forEach(function(r){ %>
+          <option value="<%= r.id %>" <%= me.favorite_route_id===r.id ? 'selected':'' %>><%= r.name %></option>
+        <% }) %>
+      </select>
+      <p class="muted small">Μπορείς πάντα να διαλέξεις άλλο δρομολόγιο κατά τη δήλωση.</p>
+      <button class="btn primary">Αποθήκευση</button>
+    </form>
+  </div>
+<%- include('partials/footer') %>

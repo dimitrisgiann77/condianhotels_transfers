@@ -1,0 +1,63 @@
+<%- include('partials/header') %>
+  <div class="card">
+    <h1>Πρόγραμμα παραλαβών</h1>
+    <form method="get" action="/driver" class="row">
+      <label>Ημερομηνία</label>
+      <input type="date" name="date" value="<%= workDate %>" min="<%= minDate %>" onchange="this.form.submit()" />
+      <span class="muted"><%= prettyDate(workDate) %></span>
+    </form>
+    <div class="row" style="margin-top:8px">
+      <a class="btn" href="/driver/print?date=<%= workDate %>" target="_blank">Εκτύπωση</a>
+      <a class="btn" href="/driver/export.pdf?date=<%= workDate %>">Λήψη PDF</a>
+      <a class="btn" href="/driver/export.csv?date=<%= workDate %>">Λήψη CSV</a>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="ml">Εργασία</div><div class="mv ok"><%= counts.work %></div></div>
+      <div class="metric"><div class="ml">Ρεπό</div><div class="mv"><%= counts.off %></div></div>
+      <div class="metric"><div class="ml">Εκκρεμούν</div><div class="mv warn"><%= counts.pending %></div></div>
+    </div>
+
+    <div id="map" class="map"></div>
+    <% if (!mapsKey) { %><p class="muted small">Πρόσθεσε GOOGLE_MAPS_API_KEY για να εμφανιστεί ο χάρτης.</p><% } %>
+  </div>
+
+  <div class="card">
+    <h2>Στάσεις & επιβάτες</h2>
+    <% if (pickups.length === 0) { %>
+      <p class="muted">Καμία δήλωση εργασίας ακόμη.</p>
+    <% } else {
+         let lastKey = null; %>
+      <table class="tbl">
+        <thead><tr><th>Δρομολόγιο</th><th>Στάση</th><th>Ώρα</th><th>Όνομα</th></tr></thead>
+        <tbody>
+        <% pickups.forEach(function(p){ %>
+          <tr>
+            <td><%= p.route || '' %></td>
+            <td><%= p.stop || '' %></td>
+            <td><%= p.pickup_time || '' %></td>
+            <td><%= p.person %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+
+  <div class="card">
+    <h2 class="warn">Δεν δήλωσαν ακόμη (<%= pending.length %>)</h2>
+    <% if (pending.length === 0) { %>
+      <p class="ok">Όλο το προσωπικό έχει δηλώσει.</p>
+    <% } else { %>
+      <ul class="pending">
+        <% pending.forEach(function(p){ %><li><%= p.name %></li><% }) %>
+      </ul>
+    <% } %>
+  </div>
+
+  <script>window.PICKUPS = <%- JSON.stringify(pickups) %>;</script>
+  <% if (mapsKey) { %>
+    <script src="/driver-map.js"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=<%= mapsKey %>&callback=initDriverMap"></script>
+  <% } %>
+<%- include('partials/footer') %>

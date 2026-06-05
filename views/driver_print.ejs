@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Πρόγραμμα παραλαβών — <%= prettyDate(workDate) %></title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:24px;line-height:1.4}
+    h1{font-size:18px;color:#193847;margin:0 0 2px}
+    .sub{color:#444;margin:0 0 14px}
+    .route{margin:14px 0 6px;font-size:15px;color:#BB9549;font-weight:bold;border-bottom:2px solid #193847;padding-bottom:3px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{border:1px solid #ccc;padding:5px 8px;text-align:left}
+    th{background:#193847;color:#fff}
+    tr:nth-child(even) td{background:#f3f6fa}
+    .pending{margin-top:16px}
+    .pending h2{font-size:14px;color:#a3651a;margin:0 0 4px}
+    .toolbar{margin-bottom:16px}
+    .btn{background:#193847;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:14px}
+    .muted{color:#888;font-size:11px;margin-top:18px}
+    @media print{ .toolbar{display:none} body{margin:0} }
+  </style>
+</head>
+<body>
+  <div class="toolbar"><button class="btn" onclick="window.print()">Εκτύπωση / Αποθήκευση ως PDF</button></div>
+  <h1>CONDIAN Hotels — Summer Transfers 2026</h1>
+  <p class="sub">Πρόγραμμα παραλαβών — <%= prettyDate(workDate) %></p>
+
+  <% if (pickups.length === 0) { %>
+    <p>Καμία δήλωση εργασίας.</p>
+  <% } else {
+       const groups = {};
+       pickups.forEach(function(p){ const k=p.route||'—'; (groups[k]=groups[k]||[]).push(p); });
+       Object.keys(groups).forEach(function(route){ %>
+    <div class="route"><%= route %></div>
+    <table>
+      <thead><tr><th style="width:70px">Ώρα</th><th style="width:40%">Στάση</th><th>Όνομα</th></tr></thead>
+      <tbody>
+        <% groups[route].forEach(function(p){ %>
+          <tr><td><%= p.pickup_time || '' %></td><td><%= p.stop || '' %></td><td><%= p.person %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <%   }) %>
+  <% } %>
+
+  <div class="pending">
+    <h2>Δεν δήλωσαν (<%= pending.length %>)</h2>
+    <% if (pending.length === 0) { %><p>Όλο το προσωπικό έχει δηλώσει.</p>
+    <% } else { %><p><%= pending.map(function(p){return p.name;}).join(' · ') %></p><% } %>
+  </div>
+
+  <p class="muted">Δημιουργήθηκε <%= new Date().toLocaleString('el-GR') %></p>
+  <script>if (location.search.indexOf('auto=1') > -1) window.print();</script>
+</body>
+</html>

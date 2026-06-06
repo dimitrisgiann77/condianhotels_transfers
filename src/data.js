@@ -114,12 +114,23 @@ async function getPendingUsers() {
 
 // ---- Profile ----
 async function getUser(id) {
-  const { rows } = await q('SELECT id,name,email,phone,username,role,favorite_route_id FROM users WHERE id=$1', [id]);
+  const { rows } = await q('SELECT id,name,email,phone,username,role,favorite_route_id,notify_enabled,notify_time FROM users WHERE id=$1', [id]);
   return rows[0] || null;
 }
-async function updateProfile(id, { email, phone, favorite_route_id }) {
-  await q('UPDATE users SET email=$1, phone=$2, favorite_route_id=$3 WHERE id=$4',
-    [email || null, phone || null, favorite_route_id || null, id]);
+async function updateProfile(id, { email, phone, favorite_route_id, notify_enabled, notify_time }) {
+  await q('UPDATE users SET email=$1, phone=$2, favorite_route_id=$3, notify_enabled=$4, notify_time=$5 WHERE id=$6',
+    [email || null, phone || null, favorite_route_id || null,
+     notify_enabled === undefined ? true : !!notify_enabled, notify_time || null, id]);
+}
+async function getStaffDue(hhmm) {
+  const { rows } = await q(`SELECT id,name,email FROM users
+    WHERE role='staff' AND active=TRUE AND notify_enabled=TRUE AND COALESCE(notify_time,'18:00')=$1`, [hhmm]);
+  return rows;
+}
+async function getDriversDue(hhmm) {
+  const { rows } = await q(`SELECT id,name,email FROM users
+    WHERE role='driver' AND active=TRUE AND notify_enabled=TRUE AND COALESCE(notify_time,'23:00')=$1`, [hhmm]);
+  return rows;
 }
 
 // ---- Stats ----
@@ -185,6 +196,6 @@ module.exports = {
   getRoutes, getStops, getAllStops, getRoutesWithStops, getDriverRouteIds,
   getPickups, getPendingStaff, getCounts, getMyDeclaration, getDrivers,
   getRouteUsage, countOnRoute, getUser, updateProfile, getMyDeclarations,
-  getSetting, setSetting, getPendingUsers,
+  getSetting, setSetting, getPendingUsers, getStaffDue, getDriversDue,
   routeStats, staffStats, ratingAverages, ratingByDriver, recentRatings, listQuestions,
 };

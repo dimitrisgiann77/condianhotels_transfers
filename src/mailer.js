@@ -107,58 +107,70 @@ const wrap = (title, body) => {
   </div>`;
 };
 
-// 18:00 — remind staff who have not declared for tomorrow.
+// --- per-user senders ---
+async function sendStaffReminderTo(p, workDate = tomorrowStr()) {
+  if (!p.email) return { skipped: true };
+  const existing = await data.getMyDeclaration(p.id, workDate);
+  if (existing) return { skipped: true }; // ήδη δήλωσε
+  const url = process.env.PUBLIC_URL || '';
+  const body = `
+    <p>Γεια σου ${esc(p.name)},</p>
+    <p>Δεν έχεις δηλώσει ακόμη τη βάρδιά σου για <b>${prettyDate(workDate)}</b> (αύριο).</p>
+    <p>Παρακαλώ μπες και δήλωσε αν εργάζεσαι ή έχεις ρεπό, και τη στάση παραλαβής σου.</p>
+    <p><a href="${esc(url)}/staff" style="background:#193847;color:#fff;padding:10px 16px;text-decoration:none;border-radius:6px">Δήλωση βάρδιας</a></p>`;
+  await send(p.email, `Υπενθύμιση: δήλωσε τη βάρδια σου για ${prettyDate(workDate)}`, wrap('Υπενθύμιση δήλωσης βάρδιας', body));
+  return { sent: true };
+}
+
+async function sendDriverSummaryTo(drv, workDate = tomorrowStr()) {
+  if (!drv.email) return { skipped: true };
+  const routeIds = await data.getDriverRouteIds(drv.id);
+  const pickups = await data.getPickups(workDate, routeIds.length ? routeIds : null);
+  const pending = await data.getPendingStaff(workDate);
+  const rowsHtml = pickups.length
+    ? pickups.map(p => `<tr><td style="padding:4px 8px;border:1px solid #ddd">${esc(p.route || '')}</td><td style="padding:4px 8px;border:1px solid #ddd">${esc(p.stop || '')}</td><td style="padding:4px 8px;border:1px solid #ddd">${esc(p.pickup_time || '')}</td><td style="padding:4px 8px;border:1px solid #ddd">${esc(p.person)}</td></tr>`).join('')
+    : `<tr><td colspan="4" style="padding:8px;color:#888">Καμία δήλωση εργασίας.</td></tr>`;
+  const pendHtml = pending.length
+    ? `<ul>${pending.map(p => `<li>${esc(p.name)}</li>`).join('')}</ul>`
+    : '<p style="color:#0a0">Όλο το προσωπικό έχει δηλώσει.</p>';
+  const body = `
+    <p>Δρομολόγιο για <b>${prettyDate(workDate)}</b> (αύριο):</p>
+    <table style="border-collapse:collapse;width:100%;font-size:14px">
+      <tr style="background:#193847;color:#fff"><th style="padding:6px 8px;text-align:left">Δρομολόγιο</th><th style="padding:6px 8px;text-align:left">Στάση</th><th style="padding:6px 8px;text-align:left">Ώρα</th><th style="padding:6px 8px;text-align:left">Όνομα</th></tr>
+      ${rowsHtml}
+    </table>
+    <h4 style="color:#a60">Δεν δήλωσαν ακόμη (${pending.length}):</h4>
+    ${pendHtml}`;
+  let attachments = [];
+  try {
+    const buf = await pdf.buildBuffer({ workDate, pickups, pending });
+    attachments = [{ filename: `transfers-${workDate}.pdf`, content: buf }];
+  } catch (e) { console.error('[mailer] PDF build failed:', e.message); }
+  await send(drv.email, `Πρόγραμμα παραλαβών — ${prettyDate(workDate)}`, wrap('Πρόγραμμα παραλαβών', body), attachments);
+  return { sent: true };
+}
+
+// --- bulk (manual buttons) ---
 async function sendStaffReminders(workDate = tomorrowStr()) {
   const pending = await data.getPendingStaff(workDate);
-  const url = process.env.PUBLIC_URL || '';
   let sent = 0;
   for (const p of pending) {
-    if (!p.email) continue;
-    const body = `
-      <p>Γεια σου ${esc(p.name)},</p>
-      <p>Δεν έχεις δηλώσει ακόμη τη βάρδιά σου για <b>${prettyDate(workDate)}</b> (αύριο).</p>
-      <p>Παρακαλώ μπες και δήλωσε αν εργάζεσαι ή έχεις ρεπό, και τη στάση παραλαβής σου.</p>
-      <p><a href="${esc(url)}/staff" style="background:#193847;color:#fff;padding:10px 16px;text-decoration:none;border-radius:6px">Δήλωση βάρδιας</a></p>`;
-    try { await send(p.email, `Υπενθύμιση: δήλωσε τη βάρδια σου για ${prettyDate(workDate)}`, wrap('Υπενθύμιση δήλωσης βάρδιας', body)); sent++; }
+    try { const r = await sendStaffReminderTo(p, workDate); if (r.sent) sent++; }
     catch (e) { console.error('[mailer] staff reminder failed for', p.email, e.message); }
   }
   console.log(`[mailer] staff reminders: ${sent}/${pending.length} sent for ${workDate}`);
   return { pending: pending.length, sent };
 }
 
-// 23:00 — send each driver the pickups for their route(s) + who is still pending.
 async function sendDriverSummaries(workDate = tomorrowStr()) {
   const drivers = await data.getDrivers();
-  const pending = await data.getPendingStaff(workDate);
   let sent = 0;
   for (const drv of drivers) {
-    if (!drv.email) continue;
-    const routeIds = await data.getDriverRouteIds(drv.id);
-    const pickups = await data.getPickups(workDate, routeIds.length ? routeIds : null);
-    const rowsHtml = pickups.length
-      ? pickups.map(p => `<tr><td style="padding:4px 8px;border:1px solid #ddd">${esc(p.route || '')}</td><td style="padding:4px 8px;border:1px solid #ddd">${esc(p.stop || '')}</td><td style="padding:4px 8px;border:1px solid #ddd">${esc(p.pickup_time || '')}</td><td style="padding:4px 8px;border:1px solid #ddd">${esc(p.person)}</td></tr>`).join('')
-      : `<tr><td colspan="4" style="padding:8px;color:#888">Καμία δήλωση εργασίας.</td></tr>`;
-    const pendHtml = pending.length
-      ? `<ul>${pending.map(p => `<li>${esc(p.name)}</li>`).join('')}</ul>`
-      : '<p style="color:#0a0">Όλο το προσωπικό έχει δηλώσει.</p>';
-    const body = `
-      <p>Δρομολόγιο για <b>${prettyDate(workDate)}</b> (αύριο):</p>
-      <table style="border-collapse:collapse;width:100%;font-size:14px">
-        <tr style="background:#193847;color:#fff"><th style="padding:6px 8px;text-align:left">Δρομολόγιο</th><th style="padding:6px 8px;text-align:left">Στάση</th><th style="padding:6px 8px;text-align:left">Ώρα</th><th style="padding:6px 8px;text-align:left">Όνομα</th></tr>
-        ${rowsHtml}
-      </table>
-      <h4 style="color:#a60">Δεν δήλωσαν μέχρι τις 23:00 (${pending.length}):</h4>
-      ${pendHtml}`;
-    let attachments = [];
-    try {
-      const buf = await pdf.buildBuffer({ workDate, pickups, pending });
-      attachments = [{ filename: `transfers-${workDate}.pdf`, content: buf }];
-    } catch (e) { console.error('[mailer] PDF build failed:', e.message); }
-    try { await send(drv.email, `Πρόγραμμα παραλαβών — ${prettyDate(workDate)}`, wrap('Πρόγραμμα παραλαβών', body), attachments); sent++; }
+    try { const r = await sendDriverSummaryTo(drv, workDate); if (r.sent) sent++; }
     catch (e) { console.error('[mailer] driver summary failed for', drv.email, e.message); }
   }
   console.log(`[mailer] driver summaries: ${sent}/${drivers.length} sent for ${workDate}`);
-  return { drivers: drivers.length, sent, pending: pending.length };
+  return { drivers: drivers.length, sent };
 }
 
-module.exports = { send, sendTest, sendStaffReminders, sendDriverSummaries };
+module.exports = { send, sendTest, sendStaffReminders, sendDriverSummaries, sendStaffReminderTo, sendDriverSummaryTo };

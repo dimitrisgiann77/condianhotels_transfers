@@ -125,6 +125,8 @@ app.get('/profile', requireLogin, async (req, res) => {
 app.post('/profile', requireLogin, async (req, res) => {
   await data.updateProfile(req.session.user.id, {
     email: req.body.email, phone: req.body.phone, favorite_route_id: req.body.favorite_route_id || null,
+    notify_enabled: req.body.notify_enabled === '1' || req.body.notify_enabled === 'on',
+    notify_time: (req.body.notify_time || '').trim() || null,
   });
   if (req.session.user.role === 'driver') {
     let ids = req.body.route_ids || [];

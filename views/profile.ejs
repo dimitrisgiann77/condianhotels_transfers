@@ -24,6 +24,13 @@
         </select>
         <p class="muted small">Μπορείς πάντα να διαλέξεις άλλο δρομολόγιο κατά τη δήλωση.</p>
       <% } %>
+      <% if (me.role === 'staff' || me.role === 'driver') { %>
+        <h3 style="margin-top:14px">Ειδοποιήσεις</h3>
+        <label class="opt"><input type="checkbox" name="notify_enabled" value="1" <%= me.notify_enabled ? 'checked':'' %>> Να λαμβάνω ειδοποιήσεις με email</label>
+        <label>Ώρα ειδοποίησης</label>
+        <input type="time" name="notify_time" value="<%= me.notify_time || (me.role==='driver'?'23:00':'18:00') %>" style="width:auto">
+        <p class="muted small"><% if (me.role==='driver') { %>Η ώρα που θα λαμβάνεις το πρόγραμμα παραλαβών σου.<% } else { %>Η ώρα υπενθύμισης για να δηλώσεις τη βάρδιά σου (αν δεν την έχεις δηλώσει ήδη).<% } %></p>
+      <% } %>
       <button class="btn primary">Αποθήκευση</button>
     </form>
   </div>

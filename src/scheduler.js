@@ -1,26 +1,36 @@
 const cron = require('node-cron');
-const { sendStaffReminders, sendDriverSummaries } = require('./mailer');
-const { TZ } = require('./util');
+const mailer = require('./mailer');
+const data = require('./data');
+const { TZ, tomorrowStr } = require('./util');
+
+function nowHHMM() {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+}
+
+async function tick() {
+  const hhmm = nowHHMM();
+  const date = tomorrowStr();
+  try {
+    const staff = await data.getStaffDue(hhmm);
+    for (const u of staff) {
+      try { await mailer.sendStaffReminderTo(u, date); }
+      catch (e) { console.error('[scheduler] staff reminder', u.email, e.message); }
+    }
+    const drivers = await data.getDriversDue(hhmm);
+    for (const d of drivers) {
+      try { await mailer.sendDriverSummaryTo(d, date); }
+      catch (e) { console.error('[scheduler] driver summary', d.email, e.message); }
+    }
+    if (staff.length || drivers.length) {
+      console.log(`[scheduler] ${hhmm} dispatched: staff=${staff.length}, drivers=${drivers.length}`);
+    }
+  } catch (e) { console.error('[scheduler] tick error:', e.message); }
+}
 
 function start() {
-  if (process.env.ENABLE_CRON === 'false') {
-    console.log('[scheduler] disabled (ENABLE_CRON=false)');
-    return;
-  }
-  const staffCron = process.env.STAFF_REMINDER_CRON || '0 18 * * *';
-  const driverCron = process.env.DRIVER_SUMMARY_CRON || '0 23 * * *';
-  const opts = { timezone: TZ };
-
-  cron.schedule(staffCron, () => {
-    console.log('[scheduler] running staff reminders');
-    sendStaffReminders().catch(e => console.error(e));
-  }, opts);
-
-  cron.schedule(driverCron, () => {
-    console.log('[scheduler] running driver summaries');
-    sendDriverSummaries().catch(e => console.error(e));
-  }, opts);
-
-  console.log(`[scheduler] staff="${staffCron}" driver="${driverCron}" tz=${TZ}`);
+  if (process.env.ENABLE_CRON === 'false') { console.log('[scheduler] disabled (ENABLE_CRON=false)'); return; }
+  cron.schedule('* * * * *', tick, { timezone: TZ });
+  console.log('[scheduler] per-user dispatch ανά λεπτό ενεργό · tz=' + TZ + ' (default: προσωπικό 18:00, οδηγοί 23:00)');
 }
+
 module.exports = { start };

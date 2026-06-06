@@ -62,7 +62,10 @@
       <% routes.forEach(function(r){ %>
         <div class="route">
           <div class="route-head">
-            <strong><%= r.name %></strong>
+            <form method="post" action="/admin/route/<%= r.id %>/rename" class="inline">
+              <input name="name" value="<%= r.name %>" style="width:auto;min-width:220px;font-weight:bold" />
+              <button class="link">Μετονομασία</button>
+            </form>
             <span class="badge <%= r.active ? 'on':'off' %>"><%= r.active ? 'Ενεργό':'Ανενεργό' %></span>
             <form method="post" action="/admin/route/<%= r.id %>/toggle" class="inline"><button class="link"><%= r.active ? 'Απενεργοποίηση' : 'Ενεργοποίηση' %></button></form>
             <form method="post" action="/admin/route/<%= r.id %>/delete" class="inline" onsubmit="return confirm('Διαγραφή δρομολογίου και στάσεων;')"><button class="link danger">Διαγραφή</button></form>

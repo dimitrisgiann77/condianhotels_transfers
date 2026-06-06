@@ -40,6 +40,11 @@ router.post('/route/:id/capacity', async (req, res) => {
   await q('UPDATE routes SET capacity=$1 WHERE id=$2', [parseInt(req.body.capacity || '9', 10), req.params.id]);
   res.redirect('/admin?msg=' + encodeURIComponent('Το όριο θέσεων ενημερώθηκε'));
 });
+router.post('/route/:id/rename', async (req, res) => {
+  const name = (req.body.name || '').trim();
+  if (name) await q('UPDATE routes SET name=$1 WHERE id=$2', [name, req.params.id]);
+  res.redirect('/admin?msg=' + encodeURIComponent('Το δρομολόγιο μετονομάστηκε'));
+});
 router.post('/route/:id/delete', async (req, res) => {
   await q('DELETE FROM routes WHERE id=$1', [req.params.id]);
   res.redirect('/admin?msg=' + encodeURIComponent('Το δρομολόγιο διαγράφηκε'));

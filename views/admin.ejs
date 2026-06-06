@@ -86,6 +86,91 @@
       <a href="/brand/favicon" target="_blank">favicon</a>
     </p>
   </div>
+
+  <div class="card">
+    <h2>Θέμα εφαρμογής — Εικαστικό (live preview)</h2>
+    <form method="post" action="/admin/branding/theme">
+      <h3>Χρώματα ανά στοιχείο</h3>
+      <div class="grid2">
+        <div><label>Μπάρα (φόντο)</label><input type="color" id="header_bg" name="header_bg" value="<%= theme.header_bg %>" oninput="pv()"></div>
+        <div><label>Μπάρα (κείμενο)</label><input type="color" id="header_text" name="header_text" value="<%= theme.header_text %>" oninput="pv()"></div>
+        <div><label>Τονισμός/γραμμή</label><input type="color" id="accent" name="accent" value="<%= theme.accent %>" oninput="pv()"></div>
+        <div><label>Φόντο σελίδας</label><input type="color" id="page_bg" name="page_bg" value="<%= theme.page_bg %>" oninput="pv()"></div>
+        <div><label>Φόντο κάρτας</label><input type="color" id="card_bg" name="card_bg" value="<%= theme.card_bg %>" oninput="pv()"></div>
+        <div><label>Κείμενο</label><input type="color" id="text" name="text" value="<%= theme.text %>" oninput="pv()"></div>
+        <div><label>Κουμπί (φόντο)</label><input type="color" id="primary" name="primary" value="<%= theme.primary %>" oninput="pv()"></div>
+        <div><label>Κουμπί (κείμενο)</label><input type="color" id="primary_text" name="primary_text" value="<%= theme.primary_text %>" oninput="pv()"></div>
+        <div><label>Σύνδεσμοι</label><input type="color" id="link" name="link" value="<%= theme.link %>" oninput="pv()"></div>
+        <div><label>Κεφαλίδα πίνακα (φόντο)</label><input type="color" id="th_bg" name="th_bg" value="<%= theme.th_bg %>" oninput="pv()"></div>
+        <div><label>Κεφαλίδα πίνακα (κείμενο)</label><input type="color" id="th_text" name="th_text" value="<%= theme.th_text %>" oninput="pv()"></div>
+        <div><label>Footer (κείμενο)</label><input type="color" id="footer_text" name="footer_text" value="<%= theme.footer_text %>" oninput="pv()"></div>
+      </div>
+      <h3>Τυπογραφία & διάταξη</h3>
+      <div class="grid2">
+        <div><label>Γραμματοσειρά (font-family)</label>
+          <input id="font" name="font" value="<%= theme.font %>" list="fontlist" oninput="pv()">
+          <datalist id="fontlist">
+            <option value="Arial, Helvetica, sans-serif"><option value="'Segoe UI', system-ui, sans-serif">
+            <option value="Georgia, serif"><option value="'Times New Roman', serif"><option value="'Courier New', monospace">
+            <option value="Verdana, sans-serif"><option value="Tahoma, sans-serif">
+          </datalist>
+        </div>
+        <div><label>Μέγεθος βάσης (px)</label><input type="number" id="font_size" name="font_size" min="11" max="22" value="<%= theme.font_size %>" oninput="pv()"></div>
+        <div><label>Στρογγυλεμένες γωνίες (px)</label><input type="number" id="radius" name="radius" min="0" max="30" value="<%= theme.radius %>" oninput="pv()"></div>
+        <div><label>Ύψος λογοτύπου (px)</label><input type="number" id="logo_height" name="logo_height" min="20" max="80" value="<%= theme.logo_height %>" oninput="pv()"></div>
+      </div>
+      <h3>Κείμενα</h3>
+      <div class="grid2">
+        <div><label>Τίτλος εφαρμογής</label><input id="app_title" name="app_title" value="<%= theme.app_title %>" oninput="pv()"></div>
+        <div><label>Κείμενο footer</label><input id="footer_label" name="footer_label" value="<%= theme.footer_label %>"></div>
+        <div><label>Μήνυμα στη σύνδεση</label><input id="login_message" name="login_message" value="<%= theme.login_message %>"></div>
+        <div><label class="opt"><input type="checkbox" id="show_title" name="show_title" value="1" <%= theme.show_title==='1'?'checked':'' %> onchange="pv()"> Εμφάνιση τίτλου στη μπάρα</label></div>
+      </div>
+      <h3>Custom CSS (προχωρημένο)</h3>
+      <textarea id="custom_css" name="custom_css" rows="5" style="width:100%;font-family:monospace;font-size:13px" placeholder="π.χ. .topbar{box-shadow:0 2px 6px rgba(0,0,0,.1)}"><%= theme.custom_css %></textarea>
+      <p class="muted small">Εφαρμόζεται σε όλη την εφαρμογή μετά την αποθήκευση (δεν εμφανίζεται στην προεπισκόπηση).</p>
+      <button class="btn primary">Αποθήκευση θέματος</button>
+    </form>
+
+    <h3>Προεπισκόπηση</h3>
+    <div id="themePreview" style="border:1px solid var(--line);border-radius:8px;overflow:hidden">
+      <div style="background:var(--pv-header-bg);color:var(--pv-header-text);border-bottom:3px solid var(--pv-accent);padding:8px 12px;display:flex;align-items:center;justify-content:space-between">
+        <b id="pvTitle" style="letter-spacing:.12em"><%= theme.app_title %></b><span style="font-size:13px">Μενού · Προφίλ</span>
+      </div>
+      <div style="background:var(--pv-page-bg);padding:14px">
+        <div style="background:var(--pv-card-bg);border-radius:var(--pv-radius);padding:14px;color:var(--pv-text);border:1px solid #e3e7ea">
+          <p style="margin:0 0 10px">Δείγμα κειμένου με <a id="pvLink" style="text-decoration:underline">σύνδεσμο</a>.</p>
+          <button id="pvBtn" style="border:none;border-radius:var(--pv-radius);padding:8px 16px">Κουμπί</button>
+          <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:13px">
+            <thead><tr><th id="pvTh" style="padding:6px 8px;text-align:left">Στάση</th><th id="pvTh2" style="padding:6px 8px;text-align:left">Ώρα</th></tr></thead>
+            <tbody><tr><td style="border:1px solid #ddd;padding:6px 8px">Γιοφυρο</td><td style="border:1px solid #ddd;padding:6px 8px">05:55</td></tr></tbody>
+          </table>
+        </div>
+        <div id="pvFoot" style="font-size:12px;margin-top:10px">CONDIAN Hotels - All rights reserved 2026</div>
+      </div>
+    </div>
+    <script>
+      function pv(){
+        var p=document.getElementById('themePreview'); if(!p) return;
+        var v=function(id){var e=document.getElementById(id);return e?e.value:'';};
+        p.style.setProperty('--pv-header-bg',v('header_bg'));
+        p.style.setProperty('--pv-header-text',v('header_text'));
+        p.style.setProperty('--pv-accent',v('accent'));
+        p.style.setProperty('--pv-page-bg',v('page_bg'));
+        p.style.setProperty('--pv-card-bg',v('card_bg'));
+        p.style.setProperty('--pv-text',v('text'));
+        p.style.setProperty('--pv-radius',(v('radius')||'10')+'px');
+        p.style.fontFamily=v('font'); p.style.fontSize=(v('font_size')||'15')+'px';
+        var b=document.getElementById('pvBtn'); b.style.background=v('primary'); b.style.color=v('primary_text');
+        document.getElementById('pvLink').style.color=v('link');
+        [document.getElementById('pvTh'),document.getElementById('pvTh2')].forEach(function(th){th.style.background=v('th_bg');th.style.color=v('th_text');});
+        document.getElementById('pvFoot').style.color=v('footer_text');
+        document.getElementById('pvTitle').textContent=v('app_title');
+        document.getElementById('pvTitle').style.display=document.getElementById('show_title').checked?'':'none';
+      }
+      pv();
+    </script>
+  </div>
   <% } %>
 
   <div class="card">

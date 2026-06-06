@@ -35,6 +35,7 @@ app.use((req, res, next) => {
   res.locals.title = APP_TITLE;
   res.locals.user = req.session.user || null;
   res.locals.mapsKey = process.env.GOOGLE_MAPS_API_KEY || '';
+  res.locals.theme = brand.getTheme();
   res.locals.prettyDate = prettyDate;
   next();
 });

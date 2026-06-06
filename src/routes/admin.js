@@ -157,6 +157,10 @@ router.post('/branding/colors', adminOnly, async (req, res) => {
   await brand.setColors(req.body);
   res.redirect('/admin?msg=' + encodeURIComponent('Τα χρώματα ενημερώθηκαν'));
 });
+router.post('/branding/theme', adminOnly, async (req, res) => {
+  await brand.setTheme(req.body);
+  res.redirect('/admin?msg=' + encodeURIComponent('Το θέμα ενημερώθηκε'));
+});
 const LOGO_MAP = { logo: 'logo', logo_white: 'logo-white', favicon: 'favicon' };
 router.post('/branding/logos', adminOnly,
   upload.fields([{ name: 'logo' }, { name: 'logo_white' }, { name: 'favicon' }]),

@@ -4,6 +4,7 @@
     <p class="login-title">CONDIAN</p>
     <p class="login-sub">HOTELS</p>
     <h1>Σύνδεση</h1>
+    <% if (theme.login_message) { %><p class="muted" style="margin:0 0 10px"><%= theme.login_message %></p><% } %>
     <% if (info) { %><div class="alert ok"><%= info %></div><% } %>
     <% if (error) { %><div class="alert err"><%= error %></div><% } %>
     <form method="post" action="/login">

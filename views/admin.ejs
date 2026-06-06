@@ -6,6 +6,7 @@
     <button type="button" data-tab="routes">Δρομολόγια</button>
     <button type="button" data-tab="users">Χρήστες & Οδηγοί</button>
     <button type="button" data-tab="questions">Ερωτήματα</button>
+    <button type="button" data-tab="comm">Επικοινωνία</button>
     <% if (user.role === 'admin') { %><button type="button" data-tab="appearance">Εμφάνιση</button><% } %>
   </div>
 
@@ -321,6 +322,31 @@
           </form>
         </div>
       <% }) %>
+    </div>
+  </div>
+
+  <!-- ============ ΕΠΙΚΟΙΝΩΝΙΑ ============ -->
+  <div class="tab" id="tab-comm">
+    <div class="card">
+      <h1>Αρχείο επικοινωνίας (emails)</h1>
+      <p class="muted small">Τελευταία emails που έστειλε η εφαρμογή (υπενθυμίσεις, προγράμματα οδηγών, δοκιμαστικά).</p>
+      <% if (!emailLog || emailLog.length===0) { %>
+        <p class="muted">Δεν έχει σταλεί κάποιο email ακόμη.</p>
+      <% } else { %>
+        <table class="tbl">
+          <thead><tr><th>Ημ/νία</th><th>Προς</th><th>Θέμα</th><th>Κατάσταση</th></tr></thead>
+          <tbody>
+          <% emailLog.forEach(function(e){ var cls = e.status==='sent'?'work':(e.status==='failed'?'off':'off'); %>
+            <tr>
+              <td class="nowrap"><%= new Date(e.created_at).toLocaleString('el-GR') %></td>
+              <td><%= e.to_email || '' %></td>
+              <td><%= e.subject || '' %></td>
+              <td><span class="badge <%= e.status==='sent'?'work':'off' %>"><%= e.status %></span><% if (e.error) { %> <span class="muted small" title="<%= e.error %>">⚠</span><% } %></td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      <% } %>
     </div>
   </div>
 

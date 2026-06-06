@@ -46,7 +46,7 @@ async function send({ to, subject, html, attachments }) {
   const r = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(sender)}/sendMail`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, saveToSentItems: false }),
+    body: JSON.stringify({ message, saveToSentItems: true }),
   });
   if (r.status !== 202) {
     let detail = '';

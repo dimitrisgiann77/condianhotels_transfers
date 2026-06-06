@@ -58,7 +58,19 @@ async function ensureTransport() {
   throw lastErr || new Error('No SMTP configuration worked');
 }
 
+async function logEmail(to, subject, status, error) {
+  try { await q('INSERT INTO email_log (to_email,subject,status,error) VALUES ($1,$2,$3,$4)', [to || null, subject || null, status, error || null]); }
+  catch (e) { console.error('[mailer] log failed:', e.message); }
+}
 async function send(to, subject, html, attachments) {
+  if (!to) return { skipped: true };
+  try {
+    const r = await sendRaw(to, subject, html, attachments);
+    await logEmail(to, subject, r && r.skipped ? 'skipped' : 'sent', r && r.skipped ? 'no SMTP/Graph' : null);
+    return r;
+  } catch (e) { await logEmail(to, subject, 'failed', e.message); throw e; }
+}
+async function sendRaw(to, subject, html, attachments) {
   if (!to) return { skipped: true };
   if (graph.enabled()) return graph.send({ to, subject, html, attachments });
   const ct = await ensureTransport();
@@ -80,20 +92,23 @@ async function sendTest(to) {
     try {
       await graph.send({ to, subject: 'CONDIAN Transfers — δοκιμαστικό email',
         html: '<p>Δοκιμαστικό email μέσω Microsoft Graph. Λειτουργεί!</p>' });
+      await logEmail(to, 'Δοκιμαστικό email', 'sent', null);
       return { ok: true, label: 'Microsoft Graph (' + graph.senderAddress() + ')' };
-    } catch (e) { return { ok: false, error: e.message }; }
+    } catch (e) { await logEmail(to, 'Δοκιμαστικό email', 'failed', e.message); return { ok: false, error: e.message }; }
   }
   try {
     const ct = await ensureTransport();
-    if (!ct) return { ok: false, error: 'Δεν έχουν οριστεί στοιχεία SMTP.' };
+    if (!ct) { await logEmail(to, 'Δοκιμαστικό email', 'skipped', 'Δεν έχουν οριστεί στοιχεία SMTP'); return { ok: false, error: 'Δεν έχουν οριστεί στοιχεία SMTP.' }; }
     await ct.transporter.sendMail({
       from: fromAddr(), to,
       subject: 'CONDIAN Transfers — δοκιμαστικό email',
       html: '<p>Δοκιμαστικό email από το σύστημα μεταφορών. Αν το βλέπεις, το SMTP δουλεύει!</p>',
     });
+    await logEmail(to, 'Δοκιμαστικό email', 'sent', null);
     return { ok: true, label: ct.label };
   } catch (e) {
     cached = null;
+    await logEmail(to, 'Δοκιμαστικό email', 'failed', e.message);
     return { ok: false, error: e.message };
   }
 }

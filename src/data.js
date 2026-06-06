@@ -243,11 +243,16 @@ async function getHotels() {
   return v.split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
 }
 
+async function getEmailLog(limit = 80) {
+  const { rows } = await q(`SELECT to_email, subject, status, error, created_at FROM email_log ORDER BY created_at DESC LIMIT $1`, [limit]);
+  return rows;
+}
+
 module.exports = {
   getRoutes, getStops, getAllStops, getRoutesWithStops, getDriverRouteIds,
   getPickups, getPendingStaff, getCounts, getMyDeclaration, getDrivers,
   getRouteUsage, countOnRoute, getUser, updateProfile, getMyDeclarations,
   getSetting, setSetting, getPendingUsers, getStaffDue, getDriversDue,
-  getSupervisors, getUsersAdmin, getHotels, getDriversWeeklyDue, getWeekPickups, getUserDeclMap,
+  getSupervisors, getUsersAdmin, getHotels, getDriversWeeklyDue, getWeekPickups, getUserDeclMap, getEmailLog,
   routeStats, staffStats, ratingAverages, ratingByDriver, recentRatings, listQuestions,
 };

@@ -24,9 +24,10 @@ router.get('/', async (req, res) => {
   const pendingUsers = await data.getPendingUsers();
   const regCode = await data.getSetting('reg_code');
   const questions = await data.listQuestions();
+  const emailLog = await data.getEmailLog();
   res.render('admin', {
     routes, users, drivers, driverRoutes, colors: brand.getColors(), pendingUsers, regCode, questions,
-    supervisors, hotels, editUser, pdf: brand.getPdf(),
+    supervisors, hotels, editUser, pdf: brand.getPdf(), emailLog,
     allRoutes: routes,
     msg: req.query.msg || null,
     tomorrow: tomorrowStr(),
@@ -177,6 +178,7 @@ router.get('/stats', async (req, res) => {
 // ----- Questions -----
 router.get('/questions', async (req, res) => {
   const questions = await data.listQuestions();
+  const emailLog = await data.getEmailLog();
   res.render('admin_questions', { questions, msg: req.query.msg || null });
 });
 router.post('/question/:id/answer', async (req, res) => {

@@ -59,6 +59,10 @@ async function init() {
     key TEXT PRIMARY KEY,
     value TEXT
   )`);
+  await q(`CREATE TABLE IF NOT EXISTS email_log (
+    id SERIAL PRIMARY KEY, to_email TEXT, subject TEXT, status TEXT, error TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`);
   await q(`CREATE TABLE IF NOT EXISTS assets (
     name TEXT PRIMARY KEY,
     mime TEXT NOT NULL,

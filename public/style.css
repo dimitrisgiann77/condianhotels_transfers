@@ -116,3 +116,10 @@ td.grip{cursor:grab;color:var(--accent);font-size:16px;text-align:center}
 .sortrows tr{cursor:move}
 .sortrows tr.dragging{opacity:.5}
 .ord-mini{border:1px solid var(--line);background:var(--card-bg);border-radius:5px;cursor:pointer;padding:1px 6px;color:var(--text);font-size:12px}
+
+/* --- contact modal --- */
+.who-link{color:var(--link);cursor:pointer;text-decoration:underline}
+.cmodal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:16px}
+.cbox{background:var(--card-bg);border-radius:var(--radius);padding:18px 20px;max-width:340px;width:100%;position:relative;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.cbox h3{color:var(--navy)}
+.cclose{position:absolute;top:6px;right:10px;border:none;background:none;font-size:22px;cursor:pointer;color:var(--text)}

@@ -181,14 +181,17 @@
     <div class="card">
       <h2>Χρήστες</h2>
       <table class="tbl">
-        <thead><tr><th>Όνομα</th><th>Username</th><th>Email</th><th>Ρόλος</th><th>Ενεργός</th><th></th></tr></thead>
+        <thead><tr><th>Όνομα</th><th>Ρόλος</th><th>Ξενοδοχείο</th><th>Υπεύθυνος</th><th>Ενεργός</th><th></th></tr></thead>
         <tbody>
         <% users.forEach(function(u){ %>
           <tr>
-            <td><%= u.name %></td><td><%= u.username %></td><td><%= u.email || '' %></td>
+            <td><a class="who-link" onclick="showContact(this)" data-name="<%= u.name %>" data-email="<%= u.email||'' %>" data-phone="<%= u.phone||'' %>" data-extra="<%= u.role %><%= u.hotel ? ' · '+u.hotel : '' %>"><%= u.name %></a><div class="muted small"><%= u.username %></div></td>
             <td><%= u.role %></td>
+            <td><%= u.hotel || '' %></td>
+            <td><%= u.supervisor_name || '' %></td>
             <td><%= u.active ? 'Ναι':'Όχι' %></td>
             <td class="nowrap">
+              <a class="link" href="/admin?user=<%= u.id %>&tab=users#userEdit">Επεξεργασία</a>
               <form method="post" action="/admin/user/<%= u.id %>/toggle" class="inline"><button class="link"><%= u.active ? 'Απενεργοποίηση' : 'Ενεργοποίηση' %></button></form>
               <form method="post" action="/admin/user/<%= u.id %>/password" class="inline" onsubmit="return promptPw(this)">
                 <input type="hidden" name="password" />
@@ -209,10 +212,41 @@
         <div><label>Κωδικός</label><input name="password" required /></div>
         <div><label>Email</label><input name="email" type="email" /></div>
         <div><label>Κινητό</label><input name="phone" /></div>
+        <div><label>Ξενοδοχείο</label>
+          <select name="hotel"><option value="">—</option><% hotels.forEach(function(hh){ %><option value="<%= hh %>"><%= hh %></option><% }) %></select>
+        </div>
+        <div><label>Υπεύθυνος</label>
+          <select name="supervisor_id"><option value="">—</option><% supervisors.forEach(function(sp){ %><option value="<%= sp.id %>"><%= sp.name %></option><% }) %></select>
+        </div>
         <div><label>Ρόλος</label>
           <select name="role"><option value="staff">Προσωπικό</option><option value="driver">Οδηγός</option><option value="superuser">Superuser</option><option value="admin">Admin</option></select>
         </div>
         <div class="end"><button class="btn primary">Προσθήκη</button></div>
+      </form>
+    </div>
+
+    <% if (editUser) { %>
+    <div class="card" id="userEdit">
+      <h2>Επεξεργασία: <%= editUser.name %></h2>
+      <form method="post" action="/admin/user/<%= editUser.id %>/edit" class="grid2">
+        <div><label>Επώνυμο</label><input name="last_name" value="<%= editUser.last_name || '' %>" /></div>
+        <div><label>Όνομα</label><input name="first_name" value="<%= editUser.first_name || '' %>" /></div>
+        <div><label>Email</label><input name="email" type="email" value="<%= editUser.email || '' %>" /></div>
+        <div><label>Κινητό</label><input name="phone" value="<%= editUser.phone || '' %>" /></div>
+        <div><label>Ξενοδοχείο</label><select name="hotel"><option value="">—</option><% hotels.forEach(function(hh){ %><option value="<%= hh %>" <%= editUser.hotel===hh?'selected':'' %>><%= hh %></option><% }) %></select></div>
+        <div><label>Υπεύθυνος</label><select name="supervisor_id"><option value="">—</option><% supervisors.forEach(function(sp){ %><option value="<%= sp.id %>" <%= editUser.supervisor_id===sp.id?'selected':'' %>><%= sp.name %></option><% }) %></select></div>
+        <div><label>Ρόλος</label><select name="role"><% ['staff','driver','superuser','admin'].forEach(function(rr){ %><option value="<%= rr %>" <%= editUser.role===rr?'selected':'' %>><%= rr %></option><% }) %></select></div>
+        <div class="end"><button class="btn primary">Αποθήκευση</button> <a class="btn" href="/admin?tab=users">Άκυρο</a></div>
+      </form>
+    </div>
+    <% } %>
+
+    <div class="card">
+      <h2>Ξενοδοχεία</h2>
+      <p class="muted small">Μία ανά γραμμή (ή με κόμμα). Εμφανίζονται ως επιλογές στους χρήστες.</p>
+      <form method="post" action="/admin/hotels">
+        <textarea name="hotels" rows="5" style="width:100%"><%= hotels.join('\n') %></textarea>
+        <button class="btn primary">Αποθήκευση ξενοδοχείων</button>
       </form>
     </div>
 
@@ -254,7 +288,7 @@
       <h2>Δρομολόγια ανά οδηγό</h2>
       <% drivers.forEach(function(d){ %>
         <form method="post" action="/admin/driver/<%= d.id %>/routes" class="driver-assign">
-          <strong><%= d.name %></strong>
+          <strong><a class="who-link" onclick="showContact(this)" data-name="<%= d.name %>" data-email="<%= d.email||'' %>" data-phone="<%= d.phone||'' %>" data-extra="οδηγός"><%= d.name %></a></strong>
           <div class="checks">
             <% routes.forEach(function(r){ %>
               <label class="chk"><input type="checkbox" name="route_ids" value="<%= r.id %>" <%= (driverRoutes[d.id]||[]).includes(r.id) ? 'checked':'' %>> <%= r.name %></label>
@@ -386,6 +420,23 @@
           <div id="pvFoot" style="font-size:12px;margin-top:10px">CONDIAN Hotels - All rights reserved 2026</div>
         </div>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>Εκτυπωτικό (PDF)</h2>
+      <form method="post" action="/admin/branding/pdf" class="grid2">
+        <div><label>Τίτλος</label><input name="title" value="<%= pdf.title %>" /></div>
+        <div><label>Υπότιτλος</label><input name="subtitle" value="<%= pdf.subtitle %>" /></div>
+        <div><label>Μέγεθος γραμμάτων (×)</label><input name="font_scale" type="number" step="0.1" min="0.7" max="1.6" value="<%= pdf.font_scale %>" /></div>
+        <div><label>Προσανατολισμός</label>
+          <select name="orientation"><option value="portrait" <%= pdf.orientation==='portrait'?'selected':'' %>>Κατακόρυφος</option><option value="landscape" <%= pdf.orientation==='landscape'?'selected':'' %>>Οριζόντιος</option></select>
+        </div>
+        <div><label class="opt"><input type="checkbox" name="show_logo" value="1" <%= pdf.show_logo==='1'?'checked':'' %>> Εμφάνιση λογοτύπου</label></div>
+        <div><label class="opt"><input type="checkbox" name="show_hotel" value="1" <%= pdf.show_hotel==='1'?'checked':'' %>> Στήλη ξενοδοχείου</label></div>
+        <div><label class="opt"><input type="checkbox" name="show_pending" value="1" <%= pdf.show_pending==='1'?'checked':'' %>> Λίστα μη-δηλωμένων</label></div>
+        <div class="end"><button class="btn primary">Αποθήκευση PDF</button></div>
+      </form>
+      <p class="muted small">Δες το αποτέλεσμα από οθόνη οδηγού → «Λήψη PDF».</p>
     </div>
   </div>
   <% } %>

@@ -1,4 +1,24 @@
   </main>
   <footer class="foot"><%= theme.footer_label %></footer>
+  <div id="contactModal" class="cmodal" onclick="if(event.target===this)this.style.display='none'">
+    <div class="cbox">
+      <button class="cclose" type="button" onclick="document.getElementById('contactModal').style.display='none'">×</button>
+      <h3 id="cName" style="margin:0 0 4px"></h3>
+      <p id="cExtra" class="muted small" style="margin:0 0 10px"></p>
+      <p id="cEmail" style="margin:4px 0"></p>
+      <p id="cPhone" style="margin:4px 0"></p>
+    </div>
+  </div>
+  <script>
+    function showContact(el){
+      var m=document.getElementById('contactModal');
+      document.getElementById('cName').textContent=el.getAttribute('data-name')||'';
+      document.getElementById('cExtra').textContent=el.getAttribute('data-extra')||'';
+      var em=el.getAttribute('data-email')||'', ph=el.getAttribute('data-phone')||'';
+      document.getElementById('cEmail').innerHTML=em?('✉ <a href="mailto:'+em+'">'+em+'</a>'):'<span class="muted">— χωρίς email</span>';
+      document.getElementById('cPhone').innerHTML=ph?('☎ <a href="tel:'+ph+'">'+ph+'</a>'):'<span class="muted">— χωρίς τηλέφωνο</span>';
+      m.style.display='flex';
+    }
+  </script>
 </body>
 </html>

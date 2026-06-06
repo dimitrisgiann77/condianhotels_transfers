@@ -14,7 +14,10 @@ const adminOnly = requireRole('admin'); // user management & branding
 
 router.get('/', async (req, res) => {
   const routes = await data.getRoutesWithStops(false);
-  const { rows: users } = await q('SELECT id,name,email,username,role,active FROM users ORDER BY role, name');
+  const users = await data.getUsersAdmin();
+  const supervisors = await data.getSupervisors();
+  const hotels = await data.getHotels();
+  const editUser = req.query.user ? (await q('SELECT * FROM users WHERE id=$1', [req.query.user])).rows[0] : null;
   const drivers = users.filter(u => u.role === 'driver');
   const driverRoutes = {};
   for (const d of drivers) driverRoutes[d.id] = await data.getDriverRouteIds(d.id);
@@ -23,6 +26,7 @@ router.get('/', async (req, res) => {
   const questions = await data.listQuestions();
   res.render('admin', {
     routes, users, drivers, driverRoutes, colors: brand.getColors(), pendingUsers, regCode, questions,
+    supervisors, hotels, editUser, pdf: brand.getPdf(),
     allRoutes: routes,
     msg: req.query.msg || null,
     tomorrow: tomorrowStr(),
@@ -101,13 +105,14 @@ function fullName(last, first) {
   return [(last || '').trim(), (first || '').trim()].filter(Boolean).join(' ');
 }
 router.post('/user', adminOnly, async (req, res) => {
-  const { last_name, first_name, email, username, password, role } = req.body;
+  const { last_name, first_name, email, username, password, role, hotel, supervisor_id } = req.body;
   try {
     const hash = await bcrypt.hash(password, 10);
-    await q(`INSERT INTO users (name,last_name,first_name,email,phone,username,password_hash,role)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    await q(`INSERT INTO users (name,last_name,first_name,email,phone,username,password_hash,role,hotel,supervisor_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [fullName(last_name, first_name), last_name || null, first_name || null,
-       email || null, req.body.phone || null, username, hash, role]);
+       email || null, req.body.phone || null, username, hash, role,
+       hotel || null, supervisor_id ? parseInt(supervisor_id,10) : null]);
     res.redirect('/admin?msg=' + encodeURIComponent('Ο χρήστης προστέθηκε'));
   } catch (e) {
     res.redirect('/admin?msg=' + encodeURIComponent('Σφάλμα: το username υπάρχει ήδη;'));
@@ -186,6 +191,10 @@ router.post('/branding/theme', adminOnly, async (req, res) => {
   await brand.setTheme(req.body);
   res.redirect('/admin?msg=' + encodeURIComponent('Το θέμα ενημερώθηκε'));
 });
+router.post('/branding/pdf', adminOnly, async (req, res) => {
+  await brand.setPdf(req.body);
+  res.redirect('/admin?msg=' + encodeURIComponent('Οι ρυθμίσεις PDF ενημερώθηκαν'));
+});
 const LOGO_MAP = { logo: 'logo', logo_white: 'logo-white', favicon: 'favicon' };
 router.post('/branding/logos', adminOnly,
   upload.fields([{ name: 'logo' }, { name: 'logo_white' }, { name: 'favicon' }]),
@@ -217,6 +226,19 @@ router.post('/user/:id/reject', async (req, res) => {
 router.post('/registration-code', adminOnly, async (req, res) => {
   await data.setSetting('reg_code', (req.body.reg_code || '').trim());
   res.redirect('/admin?msg=' + encodeURIComponent('Ο κωδικός εγγραφής ενημερώθηκε'));
+});
+
+router.post('/user/:id/edit', adminOnly, async (req, res) => {
+  const b = req.body;
+  await q(`UPDATE users SET name=$1,last_name=$2,first_name=$3,email=$4,phone=$5,role=$6,hotel=$7,supervisor_id=$8 WHERE id=$9`,
+    [fullName(b.last_name, b.first_name), b.last_name || null, b.first_name || null,
+     b.email || null, b.phone || null, b.role || 'staff', b.hotel || null,
+     b.supervisor_id ? parseInt(b.supervisor_id, 10) : null, req.params.id]);
+  res.redirect('/admin?tab=users&msg=' + encodeURIComponent('Ο χρήστης ενημερώθηκε'));
+});
+router.post('/hotels', adminOnly, async (req, res) => {
+  await data.setSetting('hotels', (req.body.hotels || '').trim());
+  res.redirect('/admin?tab=users&msg=' + encodeURIComponent('Η λίστα ξενοδοχείων ενημερώθηκε'));
 });
 
 module.exports = router;

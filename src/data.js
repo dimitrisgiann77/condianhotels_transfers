@@ -33,7 +33,8 @@ async function getPickups(workDate, routeIds = null) {
     filter = 'AND d.route_id = ANY($2::int[])';
   }
   const { rows } = await q(`
-    SELECT u.name AS person, r.name AS route, r.id AS route_id,
+    SELECT u.name AS person, u.email AS person_email, u.phone AS person_phone, u.hotel AS person_hotel,
+           r.name AS route, r.id AS route_id,
            s.name AS stop, s.pickup_time, s.lat, s.lng, s.id AS stop_id
     FROM declarations d
     JOIN users u ON u.id = d.user_id
@@ -47,11 +48,11 @@ async function getPickups(workDate, routeIds = null) {
 // Active staff who have NOT submitted any declaration for a date.
 async function getPendingStaff(workDate) {
   const { rows } = await q(`
-    SELECT u.id, u.name, u.email
+    SELECT u.id, u.name, u.email, u.phone, u.hotel
     FROM users u
     LEFT JOIN declarations d ON d.user_id = u.id AND d.work_date = $1
     WHERE u.role = 'staff' AND u.active = TRUE AND d.id IS NULL
-    ORDER BY u.name`, [workDate]);
+    ORDER BY u.hotel NULLS FIRST, u.name`, [workDate]);
   return rows;
 }
 async function getCounts(workDate) {
@@ -114,7 +115,7 @@ async function getPendingUsers() {
 
 // ---- Profile ----
 async function getUser(id) {
-  const { rows } = await q('SELECT id,name,email,phone,username,role,favorite_route_id,notify_enabled,notify_time FROM users WHERE id=$1', [id]);
+  const { rows } = await q('SELECT id,name,email,phone,username,role,favorite_route_id,notify_enabled,notify_time,hotel,supervisor_id FROM users WHERE id=$1', [id]);
   return rows[0] || null;
 }
 async function updateProfile(id, { email, phone, favorite_route_id, notify_enabled, notify_time }) {
@@ -192,10 +193,29 @@ async function listQuestions() {
   return rows;
 }
 
+async function getSupervisors() {
+  const { rows } = await q("SELECT id, name FROM users WHERE role IN ('admin','superuser') AND active=TRUE ORDER BY name");
+  return rows;
+}
+async function getUsersAdmin() {
+  const { rows } = await q(`
+    SELECT u.id,u.name,u.email,u.phone,u.username,u.role,u.active,u.hotel,
+           sup.name AS supervisor_name, u.supervisor_id
+    FROM users u LEFT JOIN users sup ON sup.id=u.supervisor_id
+    ORDER BY u.role, u.hotel NULLS FIRST, u.name`);
+  return rows;
+}
+async function getHotels() {
+  const v = await getSetting('hotels');
+  if (!v) return [];
+  return v.split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
+}
+
 module.exports = {
   getRoutes, getStops, getAllStops, getRoutesWithStops, getDriverRouteIds,
   getPickups, getPendingStaff, getCounts, getMyDeclaration, getDrivers,
   getRouteUsage, countOnRoute, getUser, updateProfile, getMyDeclarations,
   getSetting, setSetting, getPendingUsers, getStaffDue, getDriversDue,
+  getSupervisors, getUsersAdmin, getHotels,
   routeStats, staffStats, ratingAverages, ratingByDriver, recentRatings, listQuestions,
 };

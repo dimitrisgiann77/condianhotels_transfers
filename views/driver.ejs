@@ -36,7 +36,7 @@
         const stops = {};
         items.forEach(function(p){
           const sk = (p.stop||'') + '|' + (p.pickup_time||'');
-          (stops[sk] = stops[sk] || { stop: p.stop, time: p.pickup_time, people: [] }).people.push(p.person);
+          (stops[sk] = stops[sk] || { stop: p.stop, time: p.pickup_time, people: [] }).people.push(p);
         });
     %>
       <div class="routehdr"><span><%= routeName %></span><span class="ln"></span></div>
@@ -49,7 +49,7 @@
             </span>
             <span class="pill"><%= g.time || '' %></span>
           </div>
-          <% g.people.forEach(function(n){ %><div class="person"><span class="dot"></span><%= n %></div><% }) %>
+          <% g.people.forEach(function(pp){ %><div class="person"><span class="dot"></span><a class="who-link" onclick="showContact(this)" data-name="<%= pp.person %>" data-email="<%= pp.person_email||'' %>" data-phone="<%= pp.person_phone||'' %>" data-extra="<%= pp.person_hotel||'' %>"><%= pp.person %></a></div><% }) %>
         </div>
       <% }) %>
     <% }) } %>
@@ -61,7 +61,7 @@
       <% if (pending.length === 0) { %>
         <p class="ok" style="margin:0">Όλο το προσωπικό έχει δηλώσει.</p>
       <% } else { %>
-        <% pending.forEach(function(p){ %><div class="person"><span class="dot"></span><%= p.name %></div><% }) %>
+        <% pending.forEach(function(p){ %><div class="person"><span class="dot"></span><a class="who-link" onclick="showContact(this)" data-name="<%= p.name %>" data-email="<%= p.email||'' %>" data-phone="<%= p.phone||'' %>" data-extra="<%= p.hotel||'' %>"><%= p.name %></a></div><% }) %>
       <% } %>
     </div>
   </div>

@@ -17,14 +17,20 @@ const THEME_DEFAULTS = {
   show_title: '1', login_message: '', custom_css: '',
 };
 
-let cache = { colors: { ...COLOR_DEFAULTS }, theme: { ...THEME_DEFAULTS } };
+const PDF_DEFAULTS = {
+  title: 'CONDIAN Hotels', subtitle: 'Πρόγραμμα παραλαβών',
+  show_logo: '1', show_hotel: '0', show_pending: '1',
+  font_scale: '1.0', orientation: 'portrait',
+};
+let cache = { colors: { ...COLOR_DEFAULTS }, theme: { ...THEME_DEFAULTS }, pdf: { ...PDF_DEFAULTS } };
 const isHex = v => /^#[0-9a-fA-F]{6}$/.test(v || '');
 
 async function load() {
   try {
-    const { rows } = await q(`SELECT key, value FROM settings WHERE key LIKE 'color_%' OR key LIKE 'theme_%'`);
+    const { rows } = await q(`SELECT key, value FROM settings WHERE key LIKE 'color_%' OR key LIKE 'theme_%' OR key LIKE 'pdf_%'`);
     const colors = { ...COLOR_DEFAULTS };
     const theme = { ...THEME_DEFAULTS };
+    const pdf = { ...PDF_DEFAULTS };
     rows.forEach(r => {
       if (r.key.startsWith('color_')) {
         const k = r.key.slice(6);
@@ -35,14 +41,18 @@ async function load() {
           if (THEME_COLORS.includes(k)) { if (isHex(r.value)) theme[k] = r.value; }
           else theme[k] = r.value;
         }
+      } else if (r.key.startsWith('pdf_')) {
+        const k = r.key.slice(4);
+        if (k in pdf && r.value != null) pdf[k] = r.value;
       }
     });
-    cache = { colors, theme };
+    cache = { colors, theme, pdf };
   } catch (e) { console.error('[brand] load failed:', e.message); }
   return cache;
 }
 function getColors() { return cache.colors; }
 function getTheme() { return cache.theme; }
+function getPdf() { return cache.pdf; }
 
 async function setColors(obj) {
   for (const k of Object.keys(COLOR_DEFAULTS)) {
@@ -63,6 +73,14 @@ async function setTheme(obj) {
     if (THEME_COLORS.includes(k) && !isHex(v)) continue;
     if (k === 'show_title') v = (v === '1' || v === 'on' || v === 'true') ? '1' : '0';
     await q(`INSERT INTO settings (key,value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value`, ['theme_' + k, String(v)]);
+  }
+  await load();
+}
+
+async function setPdf(obj) {
+  for (const k of Object.keys(PDF_DEFAULTS)) {
+    if (k in obj) await q(`INSERT INTO settings (key,value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value`, ['pdf_' + k, String(obj[k])]);
+    else if (['show_logo','show_hotel','show_pending'].includes(k)) await q(`INSERT INTO settings (key,value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value`, ['pdf_' + k, '0']);
   }
   await load();
 }
@@ -104,5 +122,5 @@ ${t.custom_css || ''}`;
 
 module.exports = {
   COLOR_DEFAULTS, THEME_DEFAULTS, THEME_COLORS,
-  load, getColors, getTheme, setColors, setTheme, getAsset, setAsset, cssVars, isHex,
+  load, getColors, getTheme, getPdf, setColors, setTheme, setPdf, getAsset, setAsset, cssVars, isHex,
 };

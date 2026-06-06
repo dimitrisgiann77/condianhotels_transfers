@@ -58,6 +58,18 @@
   <!-- ============ ΔΡΟΜΟΛΟΓΙΑ ============ -->
   <div class="tab" id="tab-routes">
     <div class="card">
+      <h2>Σειρά εμφάνισης δρομολογίων</h2>
+      <p class="muted small">Σύρε τις γραμμές για αναδιάταξη (ή χρησιμοποίησε ▲▼) και πάτα «Αποθήκευση σειράς».</p>
+      <ul id="routeOrder" class="sortlist">
+        <% routes.forEach(function(r){ %>
+          <li draggable="true" data-id="<%= r.id %>"><span class="grip">≡</span><span><%= r.name %></span><span class="ord-btns"><button type="button" onclick="moveRow(this,-1)">▲</button><button type="button" onclick="moveRow(this,1)">▼</button></span></li>
+        <% }) %>
+      </ul>
+      <button class="btn primary" type="button" onclick="saveOrder()">Αποθήκευση σειράς</button>
+      <span id="orderMsg" class="muted small" style="margin-left:8px"></span>
+    </div>
+
+    <div class="card">
       <h2>Δρομολόγια & στάσεις</h2>
       <% routes.forEach(function(r){ %>
         <div class="route">
@@ -372,6 +384,38 @@
       activate(initial);
       if(window.ADMIN_STOP){var sf=document.getElementById('stopForm'); if(sf) sf.scrollIntoView();}
       pv();
+    })();
+  </script>
+  <script>
+    (function(){
+      var list=document.getElementById('routeOrder'); if(!list) return;
+      var dragEl=null;
+      list.querySelectorAll('li').forEach(function(li){
+        li.addEventListener('dragstart',function(){dragEl=li;li.classList.add('dragging');});
+        li.addEventListener('dragend',function(){li.classList.remove('dragging');});
+      });
+      list.addEventListener('dragover',function(e){
+        e.preventDefault();
+        var els=[].slice.call(list.querySelectorAll('li:not(.dragging)'));
+        var after=els.reduce(function(closest,child){
+          var box=child.getBoundingClientRect();var offset=e.clientY-box.top-box.height/2;
+          if(offset<0&&offset>closest.offset)return{offset:offset,element:child};return closest;
+        },{offset:-Infinity}).element;
+        if(!dragEl)return; if(after==null)list.appendChild(dragEl);else list.insertBefore(dragEl,after);
+      });
+      window.moveRow=function(btn,dir){
+        var li=btn.closest('li');
+        if(dir<0&&li.previousElementSibling)list.insertBefore(li,li.previousElementSibling);
+        if(dir>0&&li.nextElementSibling)list.insertBefore(li.nextElementSibling,li);
+      };
+      window.saveOrder=function(){
+        var ids=[].slice.call(list.querySelectorAll('li')).map(function(li){return li.dataset.id;});
+        document.getElementById('orderMsg').textContent='Αποθήκευση…';
+        fetch('/admin/routes/reorder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids})})
+          .then(function(r){return r.json();})
+          .then(function(){document.getElementById('orderMsg').textContent='Αποθηκεύτηκε ✓ (θα φανεί μετά από ανανέωση)';})
+          .catch(function(){document.getElementById('orderMsg').textContent='Σφάλμα αποθήκευσης';});
+      };
     })();
   </script>
   <% if (mapsKey) { %>

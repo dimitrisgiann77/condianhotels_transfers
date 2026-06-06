@@ -103,3 +103,11 @@ input[readonly]{background:#f3f3f3}
 .tabs button.active{background:var(--primary);color:var(--primary-text);border-color:var(--primary)}
 .tab{display:none}
 .tab.active{display:block}
+
+/* --- sortable route order --- */
+.sortlist{list-style:none;padding:0;margin:0 0 10px}
+.sortlist li{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:6px;background:var(--card-bg);cursor:move}
+.sortlist li.dragging{opacity:.5;border-color:var(--accent)}
+.sortlist .grip{color:var(--accent);cursor:grab;font-size:18px;line-height:1}
+.sortlist .ord-btns{margin-left:auto;display:flex;gap:4px}
+.sortlist .ord-btns button{border:1px solid var(--line);background:var(--card-bg);border-radius:6px;cursor:pointer;padding:2px 8px;color:var(--text)}

@@ -45,6 +45,14 @@ router.post('/route/:id/rename', async (req, res) => {
   if (name) await q('UPDATE routes SET name=$1 WHERE id=$2', [name, req.params.id]);
   res.redirect('/admin?msg=' + encodeURIComponent('Το δρομολόγιο μετονομάστηκε'));
 });
+router.post('/routes/reorder', async (req, res) => {
+  let ids = req.body.ids || [];
+  if (!Array.isArray(ids)) ids = [];
+  for (let i = 0; i < ids.length; i++) {
+    await q('UPDATE routes SET sort_order=$1 WHERE id=$2', [i + 1, parseInt(ids[i], 10)]);
+  }
+  res.json({ ok: true });
+});
 router.post('/route/:id/delete', async (req, res) => {
   await q('DELETE FROM routes WHERE id=$1', [req.params.id]);
   res.redirect('/admin?msg=' + encodeURIComponent('Το δρομολόγιο διαγράφηκε'));

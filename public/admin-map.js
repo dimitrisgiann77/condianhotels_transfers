@@ -1,46 +1,31 @@
-var _adminMap = null, _adminMarker = null, _geocoder = null;
-
-function _setPin(pos) {
-  if (!_adminMap) return;
-  if (_adminMarker) _adminMarker.setPosition(pos);
-  else {
-    _adminMarker = new google.maps.Marker({ position: pos, map: _adminMap, draggable: true });
-    _adminMarker.addListener('dragend', function (e) {
-      _setPin({ lat: e.latLng.lat(), lng: e.latLng.lng() });
-    });
+(function(){
+  var map=null, marker=null;
+  function pinIcon(){return L.divIcon({className:'pin-div',html:'<svg width="26" height="26" viewBox="0 0 24 24" fill="#BB9549" stroke="#193847" stroke-width="1.5"><path d="M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5" fill="#fff" stroke="none"/></svg>',iconSize:[26,26],iconAnchor:[13,26]});}
+  function writeLatLng(lat,lng){var a=document.getElementById('stopLat'),b=document.getElementById('stopLng');if(a)a.value=Number(lat).toFixed(6);if(b)b.value=Number(lng).toFixed(6);}
+  function setPin(lat,lng){
+    if(marker) marker.setLatLng([lat,lng]);
+    else { marker=L.marker([lat,lng],{draggable:true,icon:pinIcon()}).addTo(map); marker.on('dragend',function(e){var p=e.target.getLatLng();writeLatLng(p.lat,p.lng);}); }
+    map.panTo([lat,lng]); writeLatLng(lat,lng);
   }
-  _adminMap.panTo(pos);
-  document.getElementById('stopLat').value = (typeof pos.lat === 'function' ? pos.lat() : pos.lat).toFixed(6);
-  document.getElementById('stopLng').value = (typeof pos.lng === 'function' ? pos.lng() : pos.lng).toFixed(6);
-}
-
-function initAdminMap() {
-  var s = window.ADMIN_STOP;
-  var hasPos = s && s.lat != null && s.lng != null;
-  var center = hasPos ? { lat: Number(s.lat), lng: Number(s.lng) } : { lat: 35.3387, lng: 25.1442 };
-  _adminMap = new google.maps.Map(document.getElementById('adminMap'), {
-    center: center, zoom: hasPos ? 15 : 11, mapTypeControl: false, streetViewControl: false
-  });
-  _geocoder = new google.maps.Geocoder();
-  if (hasPos) _setPin(center);
-  _adminMap.addListener('click', function (e) {
-    _setPin({ lat: e.latLng.lat(), lng: e.latLng.lng() });
-  });
-}
-
-function geocodeStopAddress() {
-  var msg = document.getElementById('geoMsg');
-  var addr = (document.getElementById('geoAddr') || {}).value || '';
-  if (!addr.trim()) { msg.textContent = 'Γράψε μια διεύθυνση.'; return; }
-  if (!_geocoder) { msg.textContent = 'Ο χάρτης δεν φόρτωσε (λείπει το API key;).'; return; }
-  msg.textContent = 'Αναζήτηση…';
-  _geocoder.geocode({ address: addr, region: 'gr' }, function (results, status) {
-    if (status === 'OK' && results[0]) {
-      _setPin(results[0].geometry.location);
-      if (_adminMap) _adminMap.setZoom(16);
-      msg.textContent = 'Βρέθηκε: ' + results[0].formatted_address;
-    } else {
-      msg.textContent = 'Δεν βρέθηκε θέση (' + status + '). Δοκίμασε πιο συγκεκριμένη διεύθυνση ή κλικ στον χάρτη.';
-    }
-  });
-}
+  function init(){
+    var el=document.getElementById('adminMap'); if(!el || typeof L==='undefined') return;
+    var s=window.ADMIN_STOP; var has=s&&s.lat!=null&&s.lng!=null;
+    var c=has?[+s.lat,+s.lng]:[35.3387,25.1442];
+    map=L.map(el).setView(c, has?15:11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+    if(has) setPin(c[0],c[1]);
+    map.on('click',function(e){setPin(e.latlng.lat,e.latlng.lng);});
+    setTimeout(function(){map.invalidateSize();},250);
+  }
+  window.refreshAdminMap=function(){ if(map) setTimeout(function(){map.invalidateSize();},100); };
+  window.geocodeStopAddress=function(){
+    var msg=document.getElementById('geoMsg'); var addr=(document.getElementById('geoAddr')||{}).value||'';
+    if(!addr.trim()){ if(msg)msg.textContent='Γράψε μια διεύθυνση.'; return; }
+    if(msg)msg.textContent='Αναζήτηση…';
+    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gr&q='+encodeURIComponent(addr),{headers:{'Accept':'application/json'}})
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d[0]){ setPin(parseFloat(d[0].lat),parseFloat(d[0].lon)); map.setView([parseFloat(d[0].lat),parseFloat(d[0].lon)],16); if(msg)msg.textContent='Βρέθηκε: '+d[0].display_name; } else { if(msg)msg.textContent='Δεν βρέθηκε. Κάνε κλικ στον χάρτη.'; } })
+      .catch(function(){ if(msg)msg.textContent='Σφάλμα αναζήτησης. Κάνε κλικ στον χάρτη.'; });
+  };
+  if(document.readyState!=='loading') init(); else document.addEventListener('DOMContentLoaded', init);
+})();

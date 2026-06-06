@@ -44,7 +44,6 @@
         <div class="metric"><div class="ml"><%= t('pending') %></div><div class="mv warn"><%= counts.pending %></div></div>
       </div>
       <div id="map" class="map"></div>
-      <% if (!mapsKey) { %><p class="muted small">Πρόσθεσε GOOGLE_MAPS_API_KEY για τον χάρτη.</p><% } %>
     </div>
 
     <% if (pickups.length === 0) { %>
@@ -103,14 +102,11 @@
     function navDate(delta){var i=document.getElementById('dateInp');var d=new Date(i.value+'T00:00:00');d.setDate(d.getDate()+delta);var p=function(n){return String(n).padStart(2,'0');};i.value=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());document.getElementById('dateForm').submit();}
     (function(){
       var tabs=document.querySelectorAll('#drvTabs button');var secs=document.querySelectorAll('.tab');var tf=document.getElementById('tabField');
-      function act(n){tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===n));secs.forEach(s=>s.classList.toggle('active',s.id==='tab-'+n));if(tf&&n!=='cal')tf.value=n;}
+      function act(n){tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===n));secs.forEach(s=>s.classList.toggle('active',s.id==='tab-'+n));if(tf&&n!=='cal')tf.value=n;if(n==='day'&&window.refreshDriverMap)window.refreshDriverMap();}
       tabs.forEach(b=>b.addEventListener('click',()=>act(b.dataset.tab)));
       var qp=new URLSearchParams(location.search);var t=qp.get('tab')|| (qp.has('msg')?'day':'cal');
       act(t);
     })();
   </script>
-  <% if (mapsKey) { %>
-    <script src="/driver-map.js"></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=<%= mapsKey %>&callback=initDriverMap"></script>
-  <% } %>
+  <script src="/driver-map.js"></script>
 <%- include('partials/footer') %>

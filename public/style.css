@@ -174,3 +174,6 @@ td.grip{cursor:grab;color:var(--accent);font-size:16px;text-align:center}
 .usermenu-lang{display:flex;gap:6px;align-items:center;padding:8px 12px;border-top:1px solid var(--line);margin-top:4px}
 .usermenu-lang a{display:inline;padding:0 2px;color:var(--navy2)}
 .usermenu-lang a.lang-on{font-weight:bold;color:var(--accent)}
+
+.pin-div{background:none;border:none}
+.leaflet-container{border-radius:var(--radius)}

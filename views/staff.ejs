@@ -40,8 +40,8 @@
           <label>Δρομολόγιο</label>
           <select name="route_id" id="routeSel" onchange="fillStops()">
             <option value="">— Διάλεξε δρομολόγιο —</option>
-            <% routes.forEach(function(r){ %>
-              <option value="<%= r.id %>" <%= (mine && mine.route_id===r.id) || (!mine && favorite===r.id) ? 'selected':'' %>><%= r.name %></option>
+            <% routes.forEach(function(r){ var used=(usage[r.id]||0); var mineHere=(mine&&mine.status==='work'&&mine.route_id===r.id); var rem=r.capacity-used+(mineHere?1:0); var full=rem<=0; %>
+              <option value="<%= r.id %>" <%= (mine && mine.route_id===r.id) || (!mine && favorite===r.id && !full) ? 'selected':'' %> <%= full && !mineHere ? 'disabled':'' %>><%= r.name %><%= full ? ' — FULL (γεμάτο)' : '' %></option>
             <% }) %>
           </select>
           <label>Στάση παραλαβής</label>
@@ -73,7 +73,7 @@
         </div>
         <button class="btn primary">Υποβολή για όλες τις ημέρες</button>
       </form>
-      <p class="muted small">Ημέρες με πλήρες δρομολόγιο παραλείπονται.</p>
+      <p class="muted small">Σε περίπτωση που ένα δρομολόγιο είναι γεμάτο, δεν μπορεί να γίνει κράτηση.</p>
     </div>
   </div>
 

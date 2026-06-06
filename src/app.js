@@ -138,6 +138,7 @@ app.post('/profile', requireLogin, async (req, res) => {
   else nt = (nt || '').trim();
   await data.updateProfile(req.session.user.id, {
     email: req.body.email, phone: req.body.phone, favorite_route_id: req.body.favorite_route_id || null,
+    favorite_stop_id: req.body.favorite_stop_id || null,
     notify_enabled: req.body.notify_enabled === '1' || req.body.notify_enabled === 'on',
     notify_time: nt || null,
     notify_weekly_enabled: req.body.notify_weekly_enabled === '1' || req.body.notify_weekly_enabled === 'on',

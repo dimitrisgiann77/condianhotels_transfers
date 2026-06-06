@@ -66,7 +66,7 @@ async function getMyDeclaration(userId, workDate) {
 }
 async function getMyDeclarations(userId) {
   const { rows } = await q(`
-    SELECT d.work_date, d.status, r.name AS route, s.name AS stop, s.pickup_time
+    SELECT to_char(d.work_date,'YYYY-MM-DD') AS work_date, d.status, r.name AS route, s.name AS stop, s.pickup_time
     FROM declarations d
     LEFT JOIN routes r ON r.id=d.route_id
     LEFT JOIN stops  s ON s.id=d.stop_id
@@ -165,7 +165,7 @@ async function ratingByDriver(days = 90) {
 }
 async function recentRatings(limit = 20) {
   const { rows } = await q(`
-    SELECT rt.*, u.name AS person, r.name AS route, dv.name AS driver_name
+    SELECT rt.id, to_char(rt.work_date,'YYYY-MM-DD') AS work_date, rt.r_route, rt.r_driver, rt.r_vehicle, rt.comment, rt.created_at, u.name AS person, r.name AS route, dv.name AS driver_name
     FROM ratings rt
     JOIN users u ON u.id=rt.user_id
     LEFT JOIN routes r ON r.id=rt.route_id

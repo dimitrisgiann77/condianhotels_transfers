@@ -8,14 +8,22 @@
       <input type="email" name="email" value="<%= me.email || '' %>" placeholder="name@condian.gr" />
       <label>Κινητό επικοινωνίας</label>
       <input name="phone" value="<%= me.phone || '' %>" placeholder="69xxxxxxxx" />
-      <label>Αγαπημένο δρομολόγιο (προεπιλογή στη δήλωση)</label>
-      <select name="favorite_route_id">
-        <option value="">— Κανένα —</option>
-        <% routes.forEach(function(r){ %>
-          <option value="<%= r.id %>" <%= me.favorite_route_id===r.id ? 'selected':'' %>><%= r.name %></option>
-        <% }) %>
-      </select>
-      <p class="muted small">Μπορείς πάντα να διαλέξεις άλλο δρομολόγιο κατά τη δήλωση.</p>
+      <% if (me.role === 'driver') { %>
+        <label>Τα δρομολόγιά μου</label>
+        <div class="checks">
+          <% routes.forEach(function(r){ %>
+            <label class="chk"><input type="checkbox" name="route_ids" value="<%= r.id %>" <%= (myRouteIds||[]).includes(r.id) ? 'checked':'' %>> <%= r.name %></label>
+          <% }) %>
+        </div>
+        <p class="muted small">Διάλεξε ποια δρομολόγια καλύπτεις — θα λαμβάνεις το πρόγραμμά τους στις 23:00.</p>
+      <% } else if (me.role === 'staff') { %>
+        <label>Αγαπημένο δρομολόγιο (προεπιλογή στη δήλωση)</label>
+        <select name="favorite_route_id">
+          <option value="">— Κανένα —</option>
+          <% routes.forEach(function(r){ %><option value="<%= r.id %>" <%= me.favorite_route_id===r.id ? 'selected':'' %>><%= r.name %></option><% }) %>
+        </select>
+        <p class="muted small">Μπορείς πάντα να διαλέξεις άλλο δρομολόγιο κατά τη δήλωση.</p>
+      <% } %>
       <button class="btn primary">Αποθήκευση</button>
     </form>
   </div>

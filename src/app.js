@@ -119,12 +119,19 @@ app.post('/register', async (req, res) => {
 app.get('/profile', requireLogin, async (req, res) => {
   const me = await data.getUser(req.session.user.id);
   const routes = await data.getRoutes(true);
-  res.render('profile', { me, routes, saved: req.query.saved === '1' });
+  const myRouteIds = me.role === 'driver' ? await data.getDriverRouteIds(me.id) : [];
+  res.render('profile', { me, routes, myRouteIds, saved: req.query.saved === '1' });
 });
 app.post('/profile', requireLogin, async (req, res) => {
   await data.updateProfile(req.session.user.id, {
     email: req.body.email, phone: req.body.phone, favorite_route_id: req.body.favorite_route_id || null,
   });
+  if (req.session.user.role === 'driver') {
+    let ids = req.body.route_ids || [];
+    if (!Array.isArray(ids)) ids = [ids];
+    await q('DELETE FROM driver_routes WHERE driver_id=$1', [req.session.user.id]);
+    for (const rid of ids) await q('INSERT INTO driver_routes (driver_id,route_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [req.session.user.id, rid]);
+  }
   res.redirect('/profile?saved=1');
 });
 

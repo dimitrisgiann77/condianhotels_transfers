@@ -2,6 +2,7 @@ const nodemailer = require('nodemailer');
 const data = require('./data');
 const pdf = require('./pdf');
 const brand = require('./brand');
+const graph = require('./graph');
 const { q } = require('./db');
 const { tomorrowStr, prettyDate, esc } = require('./util');
 
@@ -59,6 +60,7 @@ async function ensureTransport() {
 
 async function send(to, subject, html, attachments) {
   if (!to) return { skipped: true };
+  if (graph.enabled()) return graph.send({ to, subject, html, attachments });
   const ct = await ensureTransport();
   if (!ct) return { skipped: true };
   const payload = { from: fromAddr(), to, subject, html, attachments: attachments || [] };
@@ -74,6 +76,13 @@ async function send(to, subject, html, attachments) {
 
 async function sendTest(to) {
   if (!to) return { ok: false, error: 'Δώσε διεύθυνση email.' };
+  if (graph.enabled()) {
+    try {
+      await graph.send({ to, subject: 'CONDIAN Transfers — δοκιμαστικό email',
+        html: '<p>Δοκιμαστικό email μέσω Microsoft Graph. Λειτουργεί!</p>' });
+      return { ok: true, label: 'Microsoft Graph (' + graph.senderAddress() + ')' };
+    } catch (e) { return { ok: false, error: e.message }; }
+  }
   try {
     const ct = await ensureTransport();
     if (!ct) return { ok: false, error: 'Δεν έχουν οριστεί στοιχεία SMTP.' };

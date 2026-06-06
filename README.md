@@ -109,3 +109,16 @@ Google Cloud Console → APIs & Services → ενεργοποίησε **Maps Jav
 Η αποστολή δοκιμάζει αυτόματα πολλαπλές ρυθμίσεις SMTP με τη σειρά: την προκαθορισμένη (`SMTP_PORT`/`SMTP_SECURE`), μετά `587/STARTTLS`, μετά `465/SSL`, και για κάθε μία δοκιμάζει `SMTP_HOST` και `mail.<host>`. Χρησιμοποιεί ανεκτικό TLS και timeouts 8s. Η πρώτη που δουλεύει «κλειδώνεται» (cache).
 
 Στο admin → «Δοκιμαστικό email»: βάλε μια διεύθυνση, πάτα αποστολή, και βλέπεις στην οθόνη είτε «στάλθηκε (μέσω host:port)» είτε το ακριβές σφάλμα.
+
+## Αποστολή μέσω Microsoft 365 (Graph / OAuth2) — προτεινόμενο
+Αν ο tenant έχει MFA (χωρίς app passwords), το Basic SMTP δεν δουλεύει. Χρησιμοποίησε Microsoft Graph:
+1. Entra admin (entra.microsoft.com) → **App registrations → New registration** (π.χ. «CONDIAN Transfers Mailer»), Single tenant.
+2. **API permissions → Add → Microsoft Graph → Application permissions → Mail.Send** → **Grant admin consent**.
+3. **Certificates & secrets → New client secret** → αντίγραψε την τιμή (Value).
+4. Από την Overview πάρε **Application (client) ID** και **Directory (tenant) ID**.
+5. (Συνιστάται) Περιόρισε την εφαρμογή να στέλνει μόνο από το info@condianhotels.gr με **Application Access Policy** (PowerShell: `New-ApplicationAccessPolicy`).
+6. Railway Variables:
+   - `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`, `GRAPH_CLIENT_SECRET`
+   - `GRAPH_SENDER=info@condianhotels.gr`
+   - `MAIL_FROM=CONDIAN Hotels <info@condianhotels.gr>`
+Όταν οριστεί το `GRAPH_CLIENT_ID`, η εφαρμογή στέλνει μέσω Graph (το SMTP αγνοείται). Δεν χρειάζονται κωδικοί/app passwords.

@@ -8,6 +8,18 @@ function ymd(date) {
 function todayStr() { return ymd(new Date()); }
 function tomorrowStr() { return ymd(new Date(Date.now() + 24 * 3600 * 1000)); }
 function datePlus(n) { return ymd(new Date(Date.now() + n * 24 * 3600 * 1000)); }
+function mondayOf(ref, offset) {
+  const d = new Date(ref + 'T00:00:00Z');
+  const wd = (d.getUTCDay() + 6) % 7;
+  const m = new Date(d.getTime() - wd * 86400000 + (offset || 0) * 7 * 86400000);
+  return m.toISOString().slice(0, 10);
+}
+function weekDays(monday) {
+  const out = []; const m = new Date(monday + 'T00:00:00Z');
+  for (let i = 0; i < 7; i++) out.push(new Date(m.getTime() + i * 86400000).toISOString().slice(0, 10));
+  return out;
+}
+const DAYNAMES = ['Δευ','Τρι','Τετ','Πεμ','Παρ','Σαβ','Κυρ'];
 function prettyDate(str) {
   const [y, m, d] = str.split('-');
   return `${d}/${m}/${y}`;
@@ -17,4 +29,4 @@ function esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-module.exports = { TZ, ymd, todayStr, tomorrowStr, datePlus, prettyDate, esc };
+module.exports = { TZ, ymd, todayStr, tomorrowStr, datePlus, mondayOf, weekDays, DAYNAMES, prettyDate, esc };

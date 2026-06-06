@@ -1,0 +1,18 @@
+<div class="weekcal">
+  <% if (typeof weekLabel !== 'undefined') { %>
+  <div class="wc-nav">
+    <a class="btn" href="<%= prevHref %>">◀</a>
+    <span class="muted"><%= weekLabel %></span>
+    <a class="btn" href="<%= nextHref %>">▶</a>
+  </div>
+  <% } %>
+  <div class="wc-grid">
+    <% weekcells.forEach(function(c){ %>
+      <a class="wc-cell <%= c.isToday?'today':'' %>" href="<%= c.href %>">
+        <div class="wc-day"><%= c.dayName %> <span class="wc-num"><%= c.dayNum %></span></div>
+        <% if (c.badge) { %><span class="badge <%= c.badge.cls %>"><%= c.badge.text %></span><% } %>
+        <% (c.lines||[]).forEach(function(l){ %><div class="wc-line"><%= l %></div><% }) %>
+      </a>
+    <% }) %>
+  </div>
+</div>

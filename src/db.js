@@ -77,6 +77,7 @@ async function init() {
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS notify_weekly_enabled BOOLEAN NOT NULL DEFAULT FALSE`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS notify_weekly_day INT`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS notify_weekly_time TEXT`);
+  await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS favorite_stop_id INT REFERENCES stops(id) ON DELETE SET NULL`);
   await q(`ALTER TABLE users  DROP CONSTRAINT IF EXISTS users_role_check`);
   await q(`ALTER TABLE users  ADD CONSTRAINT users_role_check CHECK (role IN ('admin','superuser','staff','driver'))`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS favorite_route_id INT REFERENCES routes(id) ON DELETE SET NULL`);

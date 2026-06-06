@@ -1,83 +1,100 @@
 <%- include('partials/header') %>
-  <div class="card">
-    <h1>Δήλωση βάρδιας</h1>
-    <% if (saved) { %><div class="alert ok">Η δήλωσή σου αποθηκεύτηκε.</div><% } %>
-    <% if (typeof msg !== "undefined" && msg) { %><div class="alert ok"><%= msg %></div><% } %>
-    <% if (error === 'full') { %><div class="alert err">Το δρομολόγιο είναι πλήρες (όριο θέσεων). Διάλεξε άλλο δρομολόγιο.</div><% } %>
-    <form method="get" action="/staff" class="row">
-      <label>Ημερομηνία</label>
-      <input type="date" name="date" value="<%= workDate %>" min="<%= minDate %>" onchange="this.form.submit()" />
-    </form>
+  <% if (saved) { %><div class="alert ok">Η δήλωσή σου αποθηκεύτηκε.</div><% } %>
+  <% if (typeof msg !== "undefined" && msg) { %><div class="alert ok"><%= msg %></div><% } %>
+  <% if (error === 'full') { %><div class="alert err">Το δρομολόγιο είναι πλήρες (όριο θέσεων). Διάλεξε άλλο δρομολόγιο.</div><% } %>
 
-    <form method="post" action="/staff" id="declForm">
-      <input type="hidden" name="work_date" value="<%= workDate %>" />
-
-      <label>Αύριο εργάζεσαι;</label>
-      <div class="seg">
-        <label class="opt"><input type="radio" name="status" value="work" <%= (mine && mine.status==='work')||!mine ? 'checked':'' %> onchange="toggleWork()"> Εργασία</label>
-        <label class="opt"><input type="radio" name="status" value="off" <%= mine && mine.status==='off' ? 'checked':'' %> onchange="toggleWork()"> Ρεπό</label>
-      </div>
-
-      <div id="workFields">
-        <label>Δρομολόγιο</label>
-        <select name="route_id" id="routeSel" onchange="fillStops()">
-          <option value="">— Διάλεξε δρομολόγιο —</option>
-          <% routes.forEach(function(r){ %>
-            <option value="<%= r.id %>" <%= (mine && mine.route_id===r.id) || (!mine && favorite===r.id) ? 'selected':'' %>><%= r.name %></option>
-          <% }) %>
-        </select>
-
-        <label>Στάση παραλαβής</label>
-        <select name="stop_id" id="stopSel" onchange="showTime()">
-          <option value="">— Διάλεξε στάση —</option>
-        </select>
-
-        <div class="timebox">Ώρα παραλαβής: <b id="timeOut">—</b></div>
-        <div class="timebox">Διαθέσιμες θέσεις: <b id="seatsOut">—</b></div>
-      </div>
-
-      <button class="btn primary" type="submit">Υποβολή δήλωσης</button>
-    </form>
+  <div class="tabs" id="staffTabs">
+    <button type="button" data-tab="cal" class="active">Ημερολόγιο</button>
+    <button type="button" data-tab="declare">Δήλωση</button>
+    <button type="button" data-tab="mine">Οι δηλώσεις μου</button>
   </div>
 
-  <div class="card">
-    <h2>Οι δηλώσεις μου</h2>
-    <% if (!myDeclarations || myDeclarations.length === 0) { %>
-      <p class="muted">Δεν έχεις δηλώσεις για τις επόμενες μέρες.</p>
-    <% } else { %>
-      <% myDeclarations.forEach(function(d){ var ds = String(d.work_date).slice(0,10); %>
-        <div class="decl">
-          <div>
-            <div class="d-date"><%= prettyDate(ds) %></div>
-            <div class="d-meta"><% if (d.status==='work') { %><%= d.route || '' %><%= d.stop ? ' · ' + d.stop : '' %><%= d.pickup_time ? ' · ' + d.pickup_time : '' %><% } else { %>Ρεπό<% } %></div>
-          </div>
-          <span class="badge <%= d.status==='work'?'work':'off' %>"><%= d.status==='work'?'Εργασία':'Ρεπό' %></span>
+  <!-- ΗΜΕΡΟΛΟΓΙΟ -->
+  <div class="tab active" id="tab-cal">
+    <div class="card">
+      <h1>Το πρόγραμμά μου</h1>
+      <%- include('partials/weekcal') %>
+      <p class="muted small">Κάνε κλικ σε μια μέρα για να δηλώσεις/αλλάξεις.</p>
+    </div>
+  </div>
+
+  <!-- ΔΗΛΩΣΗ -->
+  <div class="tab" id="tab-declare">
+    <div class="card">
+      <h1>Δήλωση βάρδιας</h1>
+      <form method="get" action="/staff" class="row">
+        <input type="hidden" name="tab" value="declare" />
+        <label>Ημερομηνία</label>
+        <input type="date" name="date" value="<%= workDate %>" min="<%= minDate %>" onchange="this.form.submit()" />
+        <span class="muted"><%= prettyDate(workDate) %></span>
+      </form>
+
+      <form method="post" action="/staff" id="declForm">
+        <input type="hidden" name="work_date" value="<%= workDate %>" />
+        <label>Εργάζεσαι;</label>
+        <div class="seg">
+          <label class="opt"><input type="radio" name="status" value="work" <%= (mine && mine.status==='work')||!mine ? 'checked':'' %> onchange="toggleWork()"> Εργασία</label>
+          <label class="opt"><input type="radio" name="status" value="off" <%= mine && mine.status==='off' ? 'checked':'' %> onchange="toggleWork()"> Ρεπό</label>
         </div>
-      <% }) %>
-    <% } %>
+        <div id="workFields">
+          <label>Δρομολόγιο</label>
+          <select name="route_id" id="routeSel" onchange="fillStops()">
+            <option value="">— Διάλεξε δρομολόγιο —</option>
+            <% routes.forEach(function(r){ %>
+              <option value="<%= r.id %>" <%= (mine && mine.route_id===r.id) || (!mine && favorite===r.id) ? 'selected':'' %>><%= r.name %></option>
+            <% }) %>
+          </select>
+          <label>Στάση παραλαβής</label>
+          <select name="stop_id" id="stopSel" onchange="showTime()"><option value="">— Διάλεξε στάση —</option></select>
+          <div class="timebox">Ώρα παραλαβής: <b id="timeOut">—</b></div>
+          <div class="timebox">Διαθέσιμες θέσεις: <b id="seatsOut">—</b></div>
+        </div>
+        <button class="btn primary" type="submit">Υποβολή δήλωσης</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Δήλωση για πολλές ημέρες</h2>
+      <form method="post" action="/staff/range" id="rangeForm">
+        <div class="grid2">
+          <div><label>Από</label><input type="date" name="from" min="<%= minDate %>" required></div>
+          <div><label>Έως</label><input type="date" name="to" min="<%= minDate %>" required></div>
+        </div>
+        <label>Κατάσταση</label>
+        <div class="seg">
+          <label class="opt"><input type="radio" name="status" value="work" checked onchange="toggleWorkR()"> Εργασία</label>
+          <label class="opt"><input type="radio" name="status" value="off" onchange="toggleWorkR()"> Ρεπό</label>
+        </div>
+        <div id="workFieldsR">
+          <label>Δρομολόγιο</label>
+          <select name="route_id" id="routeSelR" onchange="fillStopsR()"><option value="">— Διάλεξε δρομολόγιο —</option><% routes.forEach(function(r){ %><option value="<%= r.id %>"><%= r.name %></option><% }) %></select>
+          <label>Στάση παραλαβής</label>
+          <select name="stop_id" id="stopSelR"><option value="">— Διάλεξε στάση —</option></select>
+        </div>
+        <button class="btn primary">Υποβολή για όλες τις ημέρες</button>
+      </form>
+      <p class="muted small">Ημέρες με πλήρες δρομολόγιο παραλείπονται.</p>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>Δήλωση για πολλές ημέρες</h2>
-    <form method="post" action="/staff/range" id="rangeForm">
-      <div class="grid2">
-        <div><label>Από</label><input type="date" name="from" min="<%= minDate %>" required></div>
-        <div><label>Έως</label><input type="date" name="to" min="<%= minDate %>" required></div>
-      </div>
-      <label>Κατάσταση</label>
-      <div class="seg">
-        <label class="opt"><input type="radio" name="status" value="work" checked onchange="toggleWorkR()"> Εργασία</label>
-        <label class="opt"><input type="radio" name="status" value="off" onchange="toggleWorkR()"> Ρεπό</label>
-      </div>
-      <div id="workFieldsR">
-        <label>Δρομολόγιο</label>
-        <select name="route_id" id="routeSelR" onchange="fillStopsR()"><option value="">— Διάλεξε δρομολόγιο —</option><% routes.forEach(function(r){ %><option value="<%= r.id %>"><%= r.name %></option><% }) %></select>
-        <label>Στάση παραλαβής</label>
-        <select name="stop_id" id="stopSelR"><option value="">— Διάλεξε στάση —</option></select>
-      </div>
-      <button class="btn primary">Υποβολή για όλες τις ημέρες</button>
-    </form>
-    <p class="muted small">Εφαρμόζεται σε κάθε ημέρα του εύρους. Ημέρες με πλήρες δρομολόγιο παραλείπονται.</p>
+  <!-- ΟΙ ΔΗΛΩΣΕΙΣ ΜΟΥ -->
+  <div class="tab" id="tab-mine">
+    <div class="card">
+      <h2>Οι δηλώσεις μου</h2>
+      <% if (!myDeclarations || myDeclarations.length === 0) { %>
+        <p class="muted">Δεν έχεις δηλώσεις για τις επόμενες μέρες.</p>
+      <% } else { %>
+        <% myDeclarations.forEach(function(d){ var ds = String(d.work_date).slice(0,10); %>
+          <div class="decl">
+            <div>
+              <div class="d-date"><%= prettyDate(ds) %></div>
+              <div class="d-meta"><% if (d.status==='work') { %><%= d.route || '' %><%= d.stop ? ' · ' + d.stop : '' %><%= d.pickup_time ? ' · ' + d.pickup_time : '' %><% } else { %>Ρεπό<% } %></div>
+            </div>
+            <span class="badge <%= d.status==='work'?'work':'off' %>"><%= d.status==='work'?'Εργασία':'Ρεπό' %></span>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
   </div>
 
   <script>
@@ -85,48 +102,33 @@
     const MINE = <%- JSON.stringify(mine || null) %>;
     const USAGE = <%- JSON.stringify(usage || {}) %>;
     const FAVORITE = <%- JSON.stringify(favorite || null) %>;
+    const FAVORITE_STOP = <%- JSON.stringify(favoriteStop || null) %>;
     function showSeats(){
-      const rid = document.getElementById('routeSel').value;
-      const r = ROUTES.find(x => String(x.id) === String(rid));
-      const out = document.getElementById('seatsOut');
-      if (!r) { out.textContent = '—'; return; }
-      const used = USAGE[r.id] || 0;
-      const mineHere = MINE && MINE.status==='work' && String(MINE.route_id)===String(r.id);
-      const remaining = Math.max(0, r.capacity - used + (mineHere ? 1 : 0));
-      out.textContent = remaining + ' / ' + r.capacity + (remaining===0 ? ' (πλήρες)' : '');
+      const rid=document.getElementById('routeSel').value;const r=ROUTES.find(x=>String(x.id)===String(rid));const out=document.getElementById('seatsOut');
+      if(!r){out.textContent='—';return;}
+      const used=USAGE[r.id]||0;const mineHere=MINE&&MINE.status==='work'&&String(MINE.route_id)===String(r.id);
+      const rem=Math.max(0,r.capacity-used+(mineHere?1:0));out.textContent=rem+' / '+r.capacity+(rem===0?' (πλήρες)':'');
     }
-    function fillStops(preselectStopId){
-      const rid = document.getElementById('routeSel').value;
-      const sel = document.getElementById('stopSel');
-      sel.innerHTML = '<option value="">— Διάλεξε στάση —</option>';
-      const r = ROUTES.find(x => String(x.id) === String(rid));
-      if (r) r.stops.forEach(s => {
-        const o = document.createElement('option');
-        o.value = s.id; o.textContent = s.name + (s.pickup_time ? ' — ' + s.pickup_time : '');
-        o.dataset.time = s.pickup_time || '';
-        if (preselectStopId && String(preselectStopId) === String(s.id)) o.selected = true;
-        sel.appendChild(o);
-      });
-      showTime();
-      showSeats();
+    function fillStops(pre){
+      const rid=document.getElementById('routeSel').value;const sel=document.getElementById('stopSel');sel.innerHTML='<option value="">— Διάλεξε στάση —</option>';
+      const r=ROUTES.find(x=>String(x.id)===String(rid));
+      if(r)r.stops.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name+(s.pickup_time?' — '+s.pickup_time:'');o.dataset.time=s.pickup_time||'';if(pre&&String(pre)===String(s.id))o.selected=true;sel.appendChild(o);});
+      showTime();showSeats();
     }
-    function showTime(){
-      const sel = document.getElementById('stopSel');
-      const t = sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].dataset.time;
-      document.getElementById('timeOut').textContent = t || '—';
-    }
-    function toggleWork(){
-      const off = document.querySelector('input[name=status][value=off]').checked;
-      document.getElementById('workFields').style.display = off ? 'none' : 'block';
-    }
-    (function init(){
-      toggleWork();
-      if (MINE && MINE.route_id) { document.getElementById('routeSel').value = MINE.route_id; fillStops(MINE.stop_id); }
-    })();
-  </script>
-  <script>
-    function toggleWorkR(){var f=document.getElementById('rangeForm');if(!f)return;var off=f.querySelector('input[value=off]').checked;document.getElementById('workFieldsR').style.display=off?'none':'block';}
+    function showTime(){const sel=document.getElementById('stopSel');const t=sel.options[sel.selectedIndex]&&sel.options[sel.selectedIndex].dataset.time;document.getElementById('timeOut').textContent=t||'—';}
+    function toggleWork(){const off=document.querySelector('#declForm input[name=status][value=off]').checked;document.getElementById('workFields').style.display=off?'none':'block';}
+    function toggleWorkR(){var f=document.getElementById('rangeForm');var off=f.querySelector('input[value=off]').checked;document.getElementById('workFieldsR').style.display=off?'none':'block';}
     function fillStopsR(){var rid=document.getElementById('routeSelR').value;var sel=document.getElementById('stopSelR');sel.innerHTML='<option value="">— Διάλεξε στάση —</option>';var r=ROUTES.find(function(x){return String(x.id)===String(rid);});if(r)r.stops.forEach(function(s){var o=document.createElement('option');o.value=s.id;o.textContent=s.name+(s.pickup_time?' — '+s.pickup_time:'');sel.appendChild(o);});}
-    toggleWorkR();
+    (function init(){
+      toggleWork(); toggleWorkR();
+      if (MINE && MINE.route_id) { document.getElementById('routeSel').value=MINE.route_id; fillStops(MINE.stop_id); }
+      else if (FAVORITE) { document.getElementById('routeSel').value=FAVORITE; fillStops(FAVORITE_STOP); }
+      var tabs=document.querySelectorAll('#staffTabs button');var secs=document.querySelectorAll('.tab');
+      function act(n){tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===n));secs.forEach(s=>s.classList.toggle('active',s.id==='tab-'+n));}
+      tabs.forEach(b=>b.addEventListener('click',()=>act(b.dataset.tab)));
+      var qp=new URLSearchParams(location.search);var t=qp.get('tab');
+      if(!t){ t=(qp.has('saved')||qp.has('error')||qp.has('msg'))?'declare':'cal'; }
+      act(t);
+    })();
   </script>
 <%- include('partials/footer') %>

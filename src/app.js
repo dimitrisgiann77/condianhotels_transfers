@@ -12,7 +12,7 @@ const scheduler = require('./scheduler');
 const pdf = require('./pdf');
 const brand = require('./brand');
 const { requireLogin, requireRole, homeForRole } = require('./auth');
-const { tomorrowStr, prettyDate, todayStr } = require('./util');
+const { tomorrowStr, prettyDate, todayStr, mondayOf, weekDays, DAYNAMES } = require('./util');
 
 const app = express();
 const APP_TITLE = 'CONDIAN Hotels — Summer Transfers 2026';
@@ -121,11 +121,14 @@ app.post('/register', async (req, res) => {
 // ---------- Profile (όλοι) ----------
 app.get('/profile', requireLogin, async (req, res) => {
   const me = await data.getUser(req.session.user.id);
-  const routes = await data.getRoutes(true);
+  const routes = await data.getRoutesWithStops(true);
   const myRouteIds = me.role === 'driver' ? await data.getDriverRouteIds(me.id) : [];
-  res.render('profile', { me, routes, myRouteIds, saved: req.query.saved === '1' });
+  res.render('profile', { me, routes, myRouteIds, saved: req.query.saved === '1', error: req.query.err === '1' });
 });
 app.post('/profile', requireLogin, async (req, res) => {
+  if (!(req.body.email || '').trim() || !(req.body.phone || '').trim()) {
+    return res.redirect('/profile?err=1');
+  }
   let nt = req.body.notify_time;
   if (Array.isArray(nt)) nt = nt.filter(Boolean).join(',');
   else nt = (nt || '').trim();
@@ -176,8 +179,18 @@ app.get('/staff', requireRole('staff'), async (req, res) => {
   const usage = await data.getRouteUsage(workDate);
   const me = await data.getUser(req.session.user.id);
   const myDeclarations = await data.getMyDeclarations(req.session.user.id);
-  res.render('staff', { routes, workDate, mine, usage, favorite: me.favorite_route_id,
-    saved: req.query.saved === '1', error: req.query.error || null, minDate: todayStr(), myDeclarations, msg: req.query.msg || null });
+  const w = parseInt(req.query.w || '0', 10) || 0;
+  const days = weekDays(mondayOf(todayStr(), w));
+  const declMap = await data.getUserDeclMap(req.session.user.id, days);
+  const weekcells = days.map((ds, i) => {
+    const d = declMap[ds]; let badge = null, lines = [];
+    if (d) { if (d.status === 'work') { badge = { text: 'Εργασία', cls: 'work' }; lines = [(d.route || '') + (d.stop ? ' · ' + d.stop : ''), d.pickup_time || ''].filter(Boolean); } else badge = { text: 'Ρεπό', cls: 'off' }; }
+    return { date: ds, dayName: DAYNAMES[i], dayNum: ds.slice(8,10)+'/'+ds.slice(5,7), isToday: ds === todayStr(), badge, lines, href: '/staff?tab=declare&date=' + ds };
+  });
+  res.render('staff', { routes, workDate, mine, usage, favorite: me.favorite_route_id, favoriteStop: me.favorite_stop_id,
+    saved: req.query.saved === '1', error: req.query.error || null, minDate: todayStr(), myDeclarations, msg: req.query.msg || null,
+    weekcells, weekLabel: prettyDate(days[0]) + ' – ' + prettyDate(days[6]),
+    prevHref: '/staff?tab=cal&w=' + (w - 1), nextHref: '/staff?tab=cal&w=' + (w + 1) });
 });
 app.post('/staff', requireRole('staff'), async (req, res) => {
   const { work_date, status } = req.body;
@@ -246,7 +259,6 @@ async function driverRouteIds(user) {
   return ids.length ? ids : null;
 }
 app.get('/driver', requireRole('driver', 'admin'), async (req, res) => {
-  const view = req.query.view === 'week' ? 'week' : 'day';
   const workDate = req.query.date || tomorrowStr();
   const routeIds = await driverRouteIds(req.session.user);
   const pending = await data.getPendingStaff(workDate);
@@ -255,11 +267,18 @@ app.get('/driver', requireRole('driver', 'admin'), async (req, res) => {
   const usage = await data.getRouteUsage(workDate);
   const seats = allRoutes.filter(r => !routeIds || routeIds.includes(r.id))
     .map(r => ({ name: r.name, capacity: r.capacity, used: usage[r.id] || 0 }));
-  let pickups = [], week = [];
-  if (view === 'week') week = await data.getWeekPickups(routeIds, workDate, 7);
-  else pickups = await data.getPickups(workDate, routeIds);
-  res.render('driver', { view, workDate, pickups, week, pending, counts, seats,
-    minDate: todayStr(), today: todayStr(), tomorrow: tomorrowStr(), msg: req.query.msg || null });
+  const pickups = await data.getPickups(workDate, routeIds);
+  const week = await data.getWeekPickups(routeIds, workDate, 7);
+  const w = parseInt(req.query.w || '0', 10) || 0;
+  const calWeek = await data.getWeekPickups(routeIds, mondayOf(todayStr(), w), 7);
+  const weekcells = calWeek.map((day, i) => ({ date: day.date, dayName: DAYNAMES[i],
+    dayNum: day.date.slice(8,10)+'/'+day.date.slice(5,7), isToday: day.date === todayStr(),
+    badge: day.pickups.length ? { text: day.pickups.length + ' άτομα', cls: 'work' } : null, lines: [],
+    href: '/driver?tab=day&date=' + day.date }));
+  res.render('driver', { workDate, pickups, week, pending, counts, seats,
+    minDate: todayStr(), today: todayStr(), tomorrow: tomorrowStr(), msg: req.query.msg || null,
+    weekcells, weekLabel: prettyDate(calWeek[0].date) + ' – ' + prettyDate(calWeek[6].date),
+    prevHref: '/driver?tab=cal&w=' + (w - 1), nextHref: '/driver?tab=cal&w=' + (w + 1) });
 });
 app.post('/driver/remind-pending', requireRole('driver', 'admin', 'superuser'), async (req, res) => {
   const date = req.body.date || tomorrowStr();

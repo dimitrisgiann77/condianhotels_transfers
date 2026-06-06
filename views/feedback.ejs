@@ -1,5 +1,4 @@
 <%- include('partials/header') %>
-  <% if (saved === 'q') { %><div class="alert ok">Το ερώτημά σου στάλθηκε.</div><% } %>
   <% if (saved === 'r') { %><div class="alert ok">Η αξιολόγησή σου καταχωρήθηκε. Ευχαριστούμε!</div><% } %>
 
   <div class="card" style="max-width:620px">
@@ -33,12 +32,5 @@
     </form>
   </div>
 
-  <div class="card" style="max-width:620px">
-    <h2>Ερώτημα προς τη διοίκηση</h2>
-    <form method="post" action="/feedback/question">
-      <label>Το ερώτημά σου</label>
-      <textarea name="message" rows="3" required style="width:100%;padding:9px 10px;border:1px solid #ccc;border-radius:7px;font-family:inherit;font-size:15px"></textarea>
-      <button class="btn primary">Αποστολή ερωτήματος</button>
-    </form>
-  </div>
+
 <%- include('partials/footer') %>

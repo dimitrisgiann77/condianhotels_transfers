@@ -2,6 +2,8 @@
   <div class="card" style="max-width:520px">
     <h1>Το προφίλ μου</h1>
     <% if (saved) { %><div class="alert ok">Το προφίλ αποθηκεύτηκε.</div><% } %>
+    <% if (error) { %><div class="alert err">Το email και το κινητό είναι υποχρεωτικά.</div><% } %>
+    <% if (me.hotel) { %><p class="muted small">Ξενοδοχείο: <b><%= me.hotel %></b></p><% } %>
     <p class="muted small">Ονοματεπώνυμο: <b><%= me.name %></b> · Ρόλος: <%= me.role %> · Username: <%= me.username %></p>
     <form method="post" action="/profile">
       <label>Email επικοινωνίας</label>
@@ -17,12 +19,14 @@
         </div>
         <p class="muted small">Διάλεξε ποια δρομολόγια καλύπτεις.</p>
       <% } else if (me.role === 'staff') { %>
-        <label>Αγαπημένο δρομολόγιο (προεπιλογή στη δήλωση)</label>
-        <select name="favorite_route_id">
+        <label>Προεπιλεγμένο δρομολόγιο</label>
+        <select name="favorite_route_id" id="favRoute" onchange="fillFavStops()">
           <option value="">— Κανένα —</option>
           <% routes.forEach(function(r){ %><option value="<%= r.id %>" <%= me.favorite_route_id===r.id ? 'selected':'' %>><%= r.name %></option><% }) %>
         </select>
-        <p class="muted small">Μπορείς πάντα να διαλέξεις άλλο δρομολόγιο κατά τη δήλωση.</p>
+        <label>Προεπιλεγμένη στάση</label>
+        <select name="favorite_stop_id" id="favStop"><option value="">— Καμία —</option></select>
+        <p class="muted small">Προ-συμπληρώνονται αυτόματα κατά τη δήλωση (μπορείς πάντα να αλλάξεις).</p>
       <% } %>
       <% if (me.role === 'staff' || me.role === 'driver') { %>
         <h3 style="margin-top:14px">Ειδοποιήσεις</h3>
@@ -50,4 +54,17 @@
       <button class="btn primary">Αποθήκευση</button>
     </form>
   </div>
+  <% if (me.role === 'staff') { %>
+  <script>
+    var FAVR = <%- JSON.stringify(routes) %>;
+    var FAVSTOP = <%- JSON.stringify(me.favorite_stop_id || null) %>;
+    function fillFavStops(preselect){
+      var rid=document.getElementById('favRoute').value;
+      var sel=document.getElementById('favStop'); sel.innerHTML='<option value="">— Καμία —</option>';
+      var r=FAVR.find(function(x){return String(x.id)===String(rid);});
+      if(r) r.stops.forEach(function(s){var o=document.createElement('option');o.value=s.id;o.textContent=s.name+(s.pickup_time?' — '+s.pickup_time:'');if(preselect&&String(preselect)===String(s.id))o.selected=true;sel.appendChild(o);});
+    }
+    fillFavStops(FAVSTOP);
+  </script>
+  <% } %>
 <%- include('partials/footer') %>

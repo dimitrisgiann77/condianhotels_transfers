@@ -283,15 +283,18 @@
 
     <div class="card">
       <h2>Δρομολόγια ανά οδηγό</h2>
-      <% drivers.forEach(function(d){ %>
+      <% drivers.forEach(function(d){ var assigned=(driverRoutes[d.id]||[]); %>
         <form method="post" action="/admin/driver/<%= d.id %>/routes" class="driver-assign">
-          <strong><a class="who-link" onclick="showContact(this)" data-name="<%= d.name %>" data-email="<%= d.email||'' %>" data-phone="<%= d.phone||'' %>" data-extra="οδηγός"><%= d.name %></a></strong>
-          <div class="checks">
+          <div class="da-head">
+            <strong><a class="who-link" onclick="showContact(this)" data-name="<%= d.name %>" data-email="<%= d.email||'' %>" data-phone="<%= d.phone||'' %>" data-extra="οδηγός"><%= d.name %></a></strong>
+            <span class="muted small">Καλύπτει <%= assigned.length %> δρομολόγια</span>
+            <button class="btn" style="margin-left:auto">Αποθήκευση</button>
+          </div>
+          <div class="checks2">
             <% routes.forEach(function(r){ %>
-              <label class="chk"><input type="checkbox" name="route_ids" value="<%= r.id %>" <%= (driverRoutes[d.id]||[]).includes(r.id) ? 'checked':'' %>> <%= r.name %></label>
+              <label class="chk"><input type="checkbox" name="route_ids" value="<%= r.id %>" <%= assigned.includes(r.id) ? 'checked':'' %>> <%= r.name %></label>
             <% }) %>
           </div>
-          <button class="btn">Αποθήκευση</button>
         </form>
       <% }) %>
       <% if (drivers.length === 0) { %><p class="muted">Δεν υπάρχουν οδηγοί ακόμη.</p><% } %>

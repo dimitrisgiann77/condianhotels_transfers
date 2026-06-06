@@ -1,115 +1,117 @@
 <%- include('partials/header') %>
   <% if (msg) { %><div class="alert ok"><%= msg %></div><% } %>
-  <div class="card">
-    <h1>Πρόγραμμα παραλαβών</h1>
 
-    <div class="seg" style="margin-bottom:8px">
-      <a class="btn <%= view==='day'?'primary':'' %>" href="/driver?view=day&date=<%= workDate %>">Ημερήσιο</a>
-      <a class="btn <%= view==='week'?'primary':'' %>" href="/driver?view=week&date=<%= workDate %>">Εβδομαδιαίο</a>
-    </div>
+  <div class="tabs" id="drvTabs">
+    <button type="button" data-tab="cal" class="active">Ημερολόγιο</button>
+    <button type="button" data-tab="day">Ημέρα</button>
+    <button type="button" data-tab="week">Εβδομάδα</button>
+  </div>
 
-    <form method="get" action="/driver" id="dateForm" class="row">
-      <input type="hidden" name="view" value="<%= view %>" />
-      <button type="button" class="btn" onclick="navDate(-1)" title="Προηγούμενη">◀</button>
-      <input type="date" id="dateInp" name="date" value="<%= workDate %>" onchange="this.form.submit()" />
-      <button type="button" class="btn" onclick="navDate(1)" title="Επόμενη">▶</button>
-      <button type="button" class="btn" onclick="setDate('<%= today %>')">Σήμερα</button>
-      <button type="button" class="btn" onclick="setDate('<%= tomorrow %>')">Αύριο</button>
-      <span class="muted"><%= view==='week' ? 'Εβδομάδα από ' : '' %><%= prettyDate(workDate) %></span>
-    </form>
+  <form method="get" action="/driver" id="dateForm" class="row" style="margin-bottom:10px">
+    <input type="hidden" name="tab" id="tabField" value="day" />
+    <button type="button" class="btn" onclick="navDate(-1)" title="Προηγούμενη">◀</button>
+    <input type="date" id="dateInp" name="date" value="<%= workDate %>" onchange="this.form.submit()" />
+    <button type="button" class="btn" onclick="navDate(1)" title="Επόμενη">▶</button>
+    <button type="button" class="btn" onclick="setDate('<%= today %>')">Σήμερα</button>
+    <button type="button" class="btn" onclick="setDate('<%= tomorrow %>')">Αύριο</button>
+    <span class="muted"><%= prettyDate(workDate) %></span>
+  </form>
 
-    <% if (view==='day') { %>
-    <div class="row" style="margin-top:8px">
-      <a class="btn" href="/driver/print?date=<%= workDate %>" target="_blank">Εκτύπωση</a>
-      <a class="btn" href="/driver/export.pdf?date=<%= workDate %>">Λήψη PDF</a>
-    </div>
-    <% } %>
-
-    <div class="seatwrap">
-      <% seats.forEach(function(se){ var rem=Math.max(0, se.capacity-se.used); %>
-        <span class="seatchip <%= rem===0?'full':'' %>"><%= se.name %>: <b><%= rem %></b>/<%= se.capacity %> διαθέσιμες</span>
-      <% }) %>
+  <!-- ΗΜΕΡΟΛΟΓΙΟ -->
+  <div class="tab active" id="tab-cal">
+    <div class="card">
+      <h1>Εβδομαδιαίο πρόγραμμα</h1>
+      <%- include('partials/weekcal') %>
+      <p class="muted small">Κλικ σε μια μέρα για λεπτομέρειες.</p>
     </div>
   </div>
 
-  <% if (view==='day') { %>
-  <div class="card">
-    <div class="metrics">
-      <div class="metric"><div class="ml">Εργασία</div><div class="mv ok"><%= counts.work %></div></div>
-      <div class="metric"><div class="ml">Ρεπό</div><div class="mv"><%= counts.off %></div></div>
-      <div class="metric"><div class="ml">Εκκρεμούν</div><div class="mv warn"><%= counts.pending %></div></div>
-    </div>
-    <div id="map" class="map"></div>
-    <% if (!mapsKey) { %><p class="muted small">Πρόσθεσε GOOGLE_MAPS_API_KEY για τον χάρτη.</p><% } %>
-  </div>
-
-  <div class="card">
-    <h2>Στάσεις & επιβάτες</h2>
-    <% if (pickups.length === 0) { %>
-      <p class="muted">Καμία δήλωση εργασίας ακόμη.</p>
-    <% } else {
-      const routesMap = {};
-      pickups.forEach(function(p){ const rk=p.route||'—'; (routesMap[rk]=routesMap[rk]||[]).push(p); });
-      Object.keys(routesMap).forEach(function(routeName){
-        const items=routesMap[routeName]; const stops={};
-        items.forEach(function(p){ const sk=(p.stop||'')+'|'+(p.pickup_time||''); (stops[sk]=stops[sk]||{stop:p.stop,time:p.pickup_time,people:[]}).people.push(p); });
-    %>
-      <div class="routehdr"><span><%= routeName %></span><span class="ln"></span></div>
-      <% Object.keys(stops).forEach(function(sk){ var g=stops[sk]; %>
-        <div class="stopcard">
-          <div class="stopcard-head">
-            <span class="stopcard-name"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.3-7-11a7 7 0 1 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><%= g.stop || '—' %></span>
-            <span class="pill"><%= g.time || '' %></span>
-          </div>
-          <% g.people.forEach(function(pp){ %><div class="person"><span class="dot"></span><a class="who-link" onclick="showContact(this)" data-name="<%= pp.person %>" data-email="<%= pp.person_email||'' %>" data-phone="<%= pp.person_phone||'' %>" data-extra="<%= pp.person_hotel||'' %>"><%= pp.person %></a></div><% }) %>
-        </div>
-      <% }) %>
-    <% }) } %>
-  </div>
-
-  <div class="card">
-    <div class="pendingbox">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <h2 style="margin:0">Δεν δήλωσαν ακόμη (<%= pending.length %>)</h2>
-        <% if (pending.length) { %>
-        <form method="post" action="/driver/remind-pending" class="inline"><input type="hidden" name="date" value="<%= workDate %>"><button class="btn">Υπενθύμιση σε όλους</button></form>
-        <% } %>
+  <!-- ΗΜΕΡΑ -->
+  <div class="tab" id="tab-day">
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <a class="btn" href="/driver/print?date=<%= workDate %>" target="_blank">Εκτύπωση</a>
+        <a class="btn" href="/driver/export.pdf?date=<%= workDate %>">Λήψη PDF</a>
       </div>
-      <% if (pending.length === 0) { %>
-        <p class="ok" style="margin:6px 0 0">Όλο το προσωπικό έχει δηλώσει.</p>
-      <% } else { %>
-        <% pending.forEach(function(p){ %><div class="person"><span class="dot"></span><a class="who-link" onclick="showContact(this)" data-name="<%= p.name %>" data-email="<%= p.email||'' %>" data-phone="<%= p.phone||'' %>" data-extra="<%= p.hotel||'' %>"><%= p.name %></a></div><% }) %>
-      <% } %>
+      <div class="seatwrap">
+        <% seats.forEach(function(se){ var rem=Math.max(0, se.capacity-se.used); %>
+          <span class="seatchip <%= rem===0?'full':'' %>"><%= se.name %>: <b><%= rem %></b>/<%= se.capacity %> διαθέσιμες</span>
+        <% }) %>
+      </div>
+      <div class="metrics" style="margin-top:10px">
+        <div class="metric"><div class="ml">Εργασία</div><div class="mv ok"><%= counts.work %></div></div>
+        <div class="metric"><div class="ml">Ρεπό</div><div class="mv"><%= counts.off %></div></div>
+        <div class="metric"><div class="ml">Εκκρεμούν</div><div class="mv warn"><%= counts.pending %></div></div>
+      </div>
+      <div id="map" class="map"></div>
+      <% if (!mapsKey) { %><p class="muted small">Πρόσθεσε GOOGLE_MAPS_API_KEY για τον χάρτη.</p><% } %>
     </div>
+
+    <div class="card">
+      <h2>Στάσεις & επιβάτες</h2>
+      <% if (pickups.length === 0) { %>
+        <p class="muted">Καμία δήλωση εργασίας ακόμη.</p>
+      <% } else {
+        const routesMap={}; pickups.forEach(function(p){const rk=p.route||'—';(routesMap[rk]=routesMap[rk]||[]).push(p);});
+        Object.keys(routesMap).forEach(function(routeName){ const items=routesMap[routeName]; const stops={};
+          items.forEach(function(p){const sk=(p.stop||'')+'|'+(p.pickup_time||'');(stops[sk]=stops[sk]||{stop:p.stop,time:p.pickup_time,people:[]}).people.push(p);});
+      %>
+        <div class="routehdr"><span><%= routeName %></span><span class="ln"></span></div>
+        <% Object.keys(stops).forEach(function(sk){ var g=stops[sk]; %>
+          <div class="stopcard">
+            <div class="stopcard-head">
+              <span class="stopcard-name"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.3-7-11a7 7 0 1 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><%= g.stop || '—' %></span>
+              <span class="pill"><%= g.time || '' %></span>
+            </div>
+            <% g.people.forEach(function(pp){ %><div class="person"><span class="dot"></span><a class="who-link" onclick="showContact(this)" data-name="<%= pp.person %>" data-email="<%= pp.person_email||'' %>" data-phone="<%= pp.person_phone||'' %>" data-extra="<%= pp.person_hotel||'' %>"><%= pp.person %></a></div><% }) %>
+          </div>
+        <% }) %>
+      <% }) } %>
+    </div>
+
+    <div class="card">
+      <div class="pendingbox">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <h2 style="margin:0">Δεν δήλωσαν ακόμη (<%= pending.length %>)</h2>
+          <% if (pending.length) { %><form method="post" action="/driver/remind-pending" class="inline"><input type="hidden" name="date" value="<%= workDate %>"><button class="btn">Υπενθύμιση σε όλους</button></form><% } %>
+        </div>
+        <% if (pending.length === 0) { %><p class="ok" style="margin:6px 0 0">Όλο το προσωπικό έχει δηλώσει.</p>
+        <% } else { pending.forEach(function(p){ %><div class="person"><span class="dot"></span><a class="who-link" onclick="showContact(this)" data-name="<%= p.name %>" data-email="<%= p.email||'' %>" data-phone="<%= p.phone||'' %>" data-extra="<%= p.hotel||'' %>"><%= p.name %></a></div><% }) } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- ΕΒΔΟΜΑΔΑ -->
+  <div class="tab" id="tab-week">
+    <% week.forEach(function(day){ %>
+      <div class="card">
+        <h2><%= prettyDate(day.date) %></h2>
+        <% if (day.pickups.length===0) { %><p class="muted">Καμία δήλωση.</p>
+        <% } else { const rm={}; day.pickups.forEach(function(p){const k=p.route||'—';(rm[k]=rm[k]||[]).push(p);});
+          Object.keys(rm).forEach(function(rn){ %>
+          <div class="routehdr"><span><%= rn %></span><span class="ln"></span></div>
+          <table class="tbl"><thead><tr><th>Ώρα</th><th>Στάση</th><th>Όνομα</th></tr></thead><tbody>
+            <% rm[rn].forEach(function(p){ %><tr><td><%= p.pickup_time||'' %></td><td><%= p.stop||'' %></td><td><a class="who-link" onclick="showContact(this)" data-name="<%= p.person %>" data-email="<%= p.person_email||'' %>" data-phone="<%= p.person_phone||'' %>" data-extra="<%= p.person_hotel||'' %>"><%= p.person %></a></td></tr><% }) %>
+          </tbody></table>
+        <% }) } %>
+      </div>
+    <% }) %>
   </div>
 
   <script>window.PICKUPS = <%- JSON.stringify(pickups) %>;</script>
+  <script>
+    function setDate(v){document.getElementById('dateInp').value=v;document.getElementById('dateForm').submit();}
+    function navDate(delta){var i=document.getElementById('dateInp');var d=new Date(i.value+'T00:00:00');d.setDate(d.getDate()+delta);var p=function(n){return String(n).padStart(2,'0');};i.value=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());document.getElementById('dateForm').submit();}
+    (function(){
+      var tabs=document.querySelectorAll('#drvTabs button');var secs=document.querySelectorAll('.tab');var tf=document.getElementById('tabField');
+      function act(n){tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===n));secs.forEach(s=>s.classList.toggle('active',s.id==='tab-'+n));if(tf&&n!=='cal')tf.value=n;}
+      tabs.forEach(b=>b.addEventListener('click',()=>act(b.dataset.tab)));
+      var qp=new URLSearchParams(location.search);var t=qp.get('tab')|| (qp.has('msg')?'day':'cal');
+      act(t);
+    })();
+  </script>
   <% if (mapsKey) { %>
     <script src="/driver-map.js"></script>
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=<%= mapsKey %>&callback=initDriverMap"></script>
   <% } %>
-
-  <% } else { %>
-  <!-- WEEK VIEW -->
-  <% week.forEach(function(day){ %>
-    <div class="card">
-      <h2><%= prettyDate(day.date) %></h2>
-      <% if (day.pickups.length===0) { %>
-        <p class="muted">Καμία δήλωση.</p>
-      <% } else {
-        const rm={}; day.pickups.forEach(function(p){ const k=p.route||'—'; (rm[k]=rm[k]||[]).push(p); });
-        Object.keys(rm).forEach(function(rn){ %>
-        <div class="routehdr"><span><%= rn %></span><span class="ln"></span></div>
-        <table class="tbl"><thead><tr><th>Ώρα</th><th>Στάση</th><th>Όνομα</th></tr></thead><tbody>
-          <% rm[rn].forEach(function(p){ %><tr><td><%= p.pickup_time||'' %></td><td><%= p.stop||'' %></td><td><a class="who-link" onclick="showContact(this)" data-name="<%= p.person %>" data-email="<%= p.person_email||'' %>" data-phone="<%= p.person_phone||'' %>" data-extra="<%= p.person_hotel||'' %>"><%= p.person %></a></td></tr><% }) %>
-        </tbody></table>
-      <% }) } %>
-    </div>
-  <% }) %>
-  <% } %>
-
-  <script>
-    function setDate(v){var i=document.getElementById('dateInp');i.value=v;document.getElementById('dateForm').submit();}
-    function navDate(delta){var i=document.getElementById('dateInp');var d=new Date(i.value+'T00:00:00');d.setDate(d.getDate()+delta);var p=function(n){return String(n).padStart(2,'0');};i.value=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());document.getElementById('dateForm').submit();}
-  </script>
 <%- include('partials/footer') %>

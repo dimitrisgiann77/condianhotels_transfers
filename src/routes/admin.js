@@ -18,8 +18,10 @@ router.get('/', async (req, res) => {
   const drivers = users.filter(u => u.role === 'driver');
   const driverRoutes = {};
   for (const d of drivers) driverRoutes[d.id] = await data.getDriverRouteIds(d.id);
+  const pendingUsers = await data.getPendingUsers();
+  const regCode = await data.getSetting('reg_code');
   res.render('admin', {
-    routes, users, drivers, driverRoutes, colors: brand.getColors(),
+    routes, users, drivers, driverRoutes, colors: brand.getColors(), pendingUsers, regCode,
     allRoutes: routes,
     msg: req.query.msg || null,
     tomorrow: tomorrowStr(),
@@ -172,5 +174,20 @@ router.post('/branding/logos', adminOnly,
       res.redirect('/admin?msg=' + encodeURIComponent('Σφάλμα στο ανέβασμα λογοτύπου'));
     }
   });
+
+// ----- Registration approvals (admin + superuser) -----
+router.post('/user/:id/approve', async (req, res) => {
+  await q('UPDATE users SET active=TRUE WHERE id=$1', [req.params.id]);
+  res.redirect('/admin?msg=' + encodeURIComponent('Η εγγραφή εγκρίθηκε'));
+});
+router.post('/user/:id/reject', async (req, res) => {
+  await q('DELETE FROM users WHERE id=$1 AND active=FALSE', [req.params.id]);
+  res.redirect('/admin?msg=' + encodeURIComponent('Η εγγραφή απορρίφθηκε'));
+});
+// ----- Registration code (admin only) -----
+router.post('/registration-code', adminOnly, async (req, res) => {
+  await data.setSetting('reg_code', (req.body.reg_code || '').trim());
+  res.redirect('/admin?msg=' + encodeURIComponent('Ο κωδικός εγγραφής ενημερώθηκε'));
+});
 
 module.exports = router;

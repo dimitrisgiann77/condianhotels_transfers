@@ -4,6 +4,7 @@
     <p class="login-title">CONDIAN</p>
     <p class="login-sub">HOTELS</p>
     <h1>Σύνδεση</h1>
+    <% if (info) { %><div class="alert ok"><%= info %></div><% } %>
     <% if (error) { %><div class="alert err"><%= error %></div><% } %>
     <form method="post" action="/login">
       <label>Όνομα χρήστη</label>
@@ -12,5 +13,6 @@
       <input name="password" type="password" autocomplete="current-password" required />
       <button class="btn primary" type="submit">Είσοδος</button>
     </form>
+    <p class="small" style="margin-top:12px"><a href="/register">Εγγραφή νέου χρήστη</a></p>
   </div>
 <%- include('partials/footer') %>

@@ -87,6 +87,21 @@ async function countOnRoute(workDate, routeId, excludeUserId) {
   return rows[0].n;
 }
 
+// ---- Settings (key/value) ----
+async function getSetting(key) {
+  const { rows } = await q('SELECT value FROM settings WHERE key=$1', [key]);
+  return rows[0] ? rows[0].value : null;
+}
+async function setSetting(key, value) {
+  await q(`INSERT INTO settings (key,value) VALUES ($1,$2)
+           ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value`, [key, value]);
+}
+async function getPendingUsers() {
+  const { rows } = await q(`SELECT id,name,username,email,phone,role,created_at
+    FROM users WHERE active=FALSE ORDER BY created_at`);
+  return rows;
+}
+
 // ---- Profile ----
 async function getUser(id) {
   const { rows } = await q('SELECT id,name,email,phone,username,role,favorite_route_id FROM users WHERE id=$1', [id]);
@@ -160,5 +175,6 @@ module.exports = {
   getRoutes, getStops, getAllStops, getRoutesWithStops, getDriverRouteIds,
   getPickups, getPendingStaff, getCounts, getMyDeclaration, getDrivers,
   getRouteUsage, countOnRoute, getUser, updateProfile,
+  getSetting, setSetting, getPendingUsers,
   routeStats, staffStats, ratingAverages, ratingByDriver, recentRatings, listQuestions,
 };

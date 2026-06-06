@@ -67,24 +67,52 @@ app.get('/', (req, res) => {
 });
 app.get('/login', (req, res) => {
   if (req.session.user) return res.redirect(homeForRole(req.session.user.role));
-  res.render('login', { error: null });
+  res.render('login', { error: null, info: req.query.info || null });
 });
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
   try {
-    const { rows } = await q('SELECT * FROM users WHERE lower(username)=lower($1) AND active=TRUE', [username || '']);
+    const { rows } = await q('SELECT * FROM users WHERE lower(username)=lower($1)', [username || '']);
     const u = rows[0];
     if (!u || !(await bcrypt.compare(password || '', u.password_hash))) {
-      return res.status(401).render('login', { error: 'Λάθος όνομα χρήστη ή κωδικός.' });
+      return res.status(401).render('login', { error: 'Λάθος όνομα χρήστη ή κωδικός.', info: null });
+    }
+    if (!u.active) {
+      return res.status(403).render('login', { error: 'Ο λογαριασμός σου αναμένει έγκριση από τη διοίκηση.', info: null });
     }
     req.session.user = { id: u.id, name: u.name, role: u.role, username: u.username };
     res.redirect(homeForRole(u.role));
   } catch (e) {
     console.error(e);
-    res.status(500).render('login', { error: 'Σφάλμα σύνδεσης. Δοκιμάστε ξανά.' });
+    res.status(500).render('login', { error: 'Σφάλμα σύνδεσης. Δοκιμάστε ξανά.', info: null });
   }
 });
 app.post('/logout', (req, res) => { req.session.destroy(() => res.redirect('/login')); });
+
+// ---------- Self-registration (με κωδικό + έγκριση) ----------
+app.get('/register', async (req, res) => {
+  if (req.session.user) return res.redirect('/');
+  const regCode = await data.getSetting('reg_code');
+  const routes = await data.getRoutes(true);
+  res.render('register', { enabled: !!(regCode && regCode.trim()), routes, error: req.query.error || null });
+});
+app.post('/register', async (req, res) => {
+  const regCode = await data.getSetting('reg_code');
+  if (!regCode || !regCode.trim()) return res.redirect('/register?error=' + encodeURIComponent('Η εγγραφή δεν είναι ενεργή.'));
+  const b = req.body;
+  if ((b.code || '').trim() !== regCode.trim()) return res.redirect('/register?error=' + encodeURIComponent('Λάθος κωδικός εγγραφής.'));
+  const last = (b.last_name || '').trim(), first = (b.first_name || '').trim(), un = (b.username || '').trim(), pw = b.password || '';
+  if (!last || !first || !un || !pw) return res.redirect('/register?error=' + encodeURIComponent('Συμπλήρωσε όλα τα υποχρεωτικά πεδία.'));
+  try {
+    const hash = await bcrypt.hash(pw, 10);
+    await q(`INSERT INTO users (name,last_name,first_name,email,phone,username,password_hash,role,active,favorite_route_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,'staff',FALSE,$8)`,
+      [last + ' ' + first, last, first, (b.email || '').trim() || null, (b.phone || '').trim() || null, un, hash, b.favorite_route_id || null]);
+    res.redirect('/login?info=' + encodeURIComponent('Η εγγραφή καταχωρήθηκε. Θα συνδεθείς μόλις την εγκρίνει η διοίκηση.'));
+  } catch (e) {
+    res.redirect('/register?error=' + encodeURIComponent('Το username χρησιμοποιείται ήδη ή υπήρξε σφάλμα.'));
+  }
+});
 
 // ---------- Profile (όλοι) ----------
 app.get('/profile', requireLogin, async (req, res) => {

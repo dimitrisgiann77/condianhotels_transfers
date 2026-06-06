@@ -23,6 +23,39 @@
     <p class="muted small">Στέλνει ένα δοκιμαστικό μήνυμα στη διεύθυνση που θα βάλεις και δείχνει εδώ το αποτέλεσμα/σφάλμα.</p>
   </div>
 
+  <div class="card">
+    <h2>Εγκρίσεις εγγραφών (<%= pendingUsers.length %>)</h2>
+    <% if (pendingUsers.length === 0) { %>
+      <p class="muted">Δεν υπάρχουν εκκρεμείς εγγραφές.</p>
+    <% } else { %>
+      <table class="tbl">
+        <thead><tr><th>Όνομα</th><th>Username</th><th>Email</th><th>Κινητό</th><th>Ρόλος</th><th></th></tr></thead>
+        <tbody>
+        <% pendingUsers.forEach(function(u){ %>
+          <tr>
+            <td><%= u.name %></td><td><%= u.username %></td><td><%= u.email||'' %></td><td><%= u.phone||'' %></td><td><%= u.role %></td>
+            <td class="nowrap">
+              <form method="post" action="/admin/user/<%= u.id %>/approve" class="inline"><button class="link">Έγκριση</button></form>
+              <form method="post" action="/admin/user/<%= u.id %>/reject" class="inline" onsubmit="return confirm('Απόρριψη & διαγραφή;')"><button class="link danger">Απόρριψη</button></form>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+
+  <% if (user.role === 'admin') { %>
+  <div class="card">
+    <h2>Κωδικός εγγραφής</h2>
+    <p class="muted small">Όρισε κωδικό για να εγγράφεται το προσωπικό στο <code>/register</code>. Κενό = απενεργοποίηση εγγραφής.</p>
+    <form method="post" action="/admin/registration-code" class="row">
+      <input name="reg_code" value="<%= regCode || '' %>" placeholder="π.χ. CONDIAN2026" style="min-width:240px" />
+      <button class="btn">Αποθήκευση</button>
+    </form>
+  </div>
+  <% } %>
+
   <% if (user.role === 'admin') { %>
   <div class="card">
     <h2>Branding — Χρώματα & Λογότυπα</h2>

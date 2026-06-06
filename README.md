@@ -122,3 +122,9 @@ Google Cloud Console → APIs & Services → ενεργοποίησε **Maps Jav
    - `GRAPH_SENDER=info@condianhotels.gr`
    - `MAIL_FROM=CONDIAN Hotels <info@condianhotels.gr>`
 Όταν οριστεί το `GRAPH_CLIENT_ID`, η εφαρμογή στέλνει μέσω Graph (το SMTP αγνοείται). Δεν χρειάζονται κωδικοί/app passwords.
+
+## Αυτο-εγγραφή προσωπικού (/register)
+- Στο admin → «Κωδικός εγγραφής» όρισε έναν κωδικό (π.χ. CONDIAN2026). Κενό = απενεργοποιημένη εγγραφή.
+- Μοίρασε στο προσωπικό τον σύνδεσμο `<PUBLIC_URL>/register` και τον κωδικό.
+- Ο νέος εγγράφεται (ρόλος «προσωπικό») και ο λογαριασμός μένει **ανενεργός** μέχρι να τον **εγκρίνει admin ή superuser** (admin → «Εγκρίσεις εγγραφών» → Έγκριση/Απόρριψη).
+- Οι οδηγοί/admin/superuser δημιουργούνται πάντα από τον admin (δεν προκύπτουν από αυτο-εγγραφή).

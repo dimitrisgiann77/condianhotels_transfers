@@ -1,19 +1,20 @@
 <%- include('partials/header') %>
   <div class="card login">
+    <div class="langsw" style="text-align:right"><a href="/lang/el" class="<%= lang==='el'?'lang-on':'' %>">EL</a> · <a href="/lang/en" class="<%= lang==='en'?'lang-on':'' %>">EN</a></div>
     <img class="login-logo" src="/brand/logo" onerror="this.onerror=null;this.src='/logo-mark.svg'" alt="CONDIAN Hotels" />
     <p class="login-title">CONDIAN</p>
     <p class="login-sub">HOTELS</p>
-    <h1>Σύνδεση</h1>
+    <h1><%= t('signin') %></h1>
     <% if (theme.login_message) { %><p class="muted" style="margin:0 0 10px"><%= theme.login_message %></p><% } %>
     <% if (info) { %><div class="alert ok"><%= info %></div><% } %>
     <% if (error) { %><div class="alert err"><%= error %></div><% } %>
     <form method="post" action="/login">
-      <label>Όνομα χρήστη</label>
+      <label><%= t('username') %></label>
       <input name="username" autocomplete="username" required autofocus />
-      <label>Κωδικός</label>
+      <label><%= t('password') %></label>
       <input name="password" type="password" autocomplete="current-password" required />
-      <button class="btn primary" type="submit">Είσοδος</button>
+      <button class="btn primary" type="submit"><%= t('enter') %></button>
     </form>
-    <p class="small" style="margin-top:12px"><a href="/register">Εγγραφή νέου χρήστη</a></p>
+    <p class="small" style="margin-top:12px"><a href="/register"><%= t('register_link') %></a></p>
   </div>
 <%- include('partials/footer') %>

@@ -136,16 +136,16 @@ async function getPendingUsers() {
 
 // ---- Profile ----
 async function getUser(id) {
-  const { rows } = await q('SELECT id,name,email,phone,username,role,favorite_route_id,favorite_stop_id,notify_enabled,notify_time,hotel,supervisor_id,notify_weekly_enabled,notify_weekly_day,notify_weekly_time FROM users WHERE id=$1', [id]);
+  const { rows } = await q('SELECT id,name,email,phone,username,role,favorite_route_id,favorite_stop_id,notify_enabled,notify_time,hotel,supervisor_id,notify_weekly_enabled,notify_weekly_day,notify_weekly_time,lang FROM users WHERE id=$1', [id]);
   return rows[0] || null;
 }
 async function updateProfile(id, p) {
   await q(`UPDATE users SET email=$1, phone=$2, favorite_route_id=$3, favorite_stop_id=$4, notify_enabled=$5, notify_time=$6,
-           notify_weekly_enabled=$7, notify_weekly_day=$8, notify_weekly_time=$9 WHERE id=$10`,
+           notify_weekly_enabled=$7, notify_weekly_day=$8, notify_weekly_time=$9, lang=$10 WHERE id=$11`,
     [p.email || null, p.phone || null, p.favorite_route_id || null, p.favorite_stop_id || null,
      p.notify_enabled === undefined ? true : !!p.notify_enabled, p.notify_time || null,
      !!p.notify_weekly_enabled, (p.notify_weekly_day===''||p.notify_weekly_day==null)?null:parseInt(p.notify_weekly_day,10),
-     p.notify_weekly_time || null, id]);
+     p.notify_weekly_time || null, p.lang || null, id]);
 }
 async function getStaffDue(hhmm) {
   const { rows } = await q(`SELECT id,name,email FROM users

@@ -2,33 +2,33 @@
   <% if (saved === 'r') { %><div class="alert ok">Η αξιολόγησή σου καταχωρήθηκε. Ευχαριστούμε!</div><% } %>
 
   <div class="card" style="max-width:620px">
-    <h1>Αξιολόγηση δρομολογίου</h1>
+    <h1><%= t('fb_rate_title') %></h1>
     <form method="post" action="/feedback/rating">
       <div class="grid2">
-        <div><label>Ημερομηνία</label><input type="date" name="work_date" value="<%= today %>" /></div>
-        <div><label>Δρομολόγιο</label>
+        <div><label><%= t('date') %></label><input type="date" name="work_date" value="<%= today %>" /></div>
+        <div><label><%= t('route') %></label>
           <select name="route_id">
             <option value="">—</option>
             <% routes.forEach(function(r){ %><option value="<%= r.id %>" <%= favorite===r.id ? 'selected':'' %>><%= r.name %></option><% }) %>
           </select>
         </div>
-        <div><label>Οδηγός</label>
+        <div><label><%= t('driver') %></label>
           <select name="driver_id"><option value="">—</option>
             <% drivers.forEach(function(d){ %><option value="<%= d.id %>"><%= d.name %></option><% }) %>
           </select>
         </div>
       </div>
       <div class="grid2">
-        <div><label>Δρομολόγιο (1-5)</label>
+        <div><label><%= t('fb_route_q') %></label>
           <select name="r_route"><option value="">—</option><% for(var i=5;i>=1;i--){ %><option value="<%= i %>"><%= i %> ★</option><% } %></select></div>
-        <div><label>Οδηγός (1-5)</label>
+        <div><label><%= t('fb_driver_q') %></label>
           <select name="r_driver"><option value="">—</option><% for(var i=5;i>=1;i--){ %><option value="<%= i %>"><%= i %> ★</option><% } %></select></div>
-        <div><label>Όχημα (1-5)</label>
+        <div><label><%= t('fb_vehicle_q') %></label>
           <select name="r_vehicle"><option value="">—</option><% for(var i=5;i>=1;i--){ %><option value="<%= i %>"><%= i %> ★</option><% } %></select></div>
       </div>
-      <label>Σχόλιο (προαιρετικό)</label>
+      <label><%= t('fb_comment') %></label>
       <textarea name="comment" rows="3" style="width:100%;padding:9px 10px;border:1px solid #ccc;border-radius:7px;font-family:inherit;font-size:15px"></textarea>
-      <button class="btn primary">Υποβολή αξιολόγησης</button>
+      <button class="btn primary"><%= t('fb_submit') %></button>
     </form>
   </div>
 

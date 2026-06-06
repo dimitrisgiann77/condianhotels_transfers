@@ -1,24 +1,24 @@
 <%- include('partials/header') %>
   <div class="card" style="max-width:520px">
-    <h1>Το προφίλ μου</h1>
+    <h1><%= t('my_profile') %></h1>
     <div style="display:flex;align-items:center;gap:14px;margin:8px 0 14px">
       <img class="avatar-lg" src="/avatar/<%= me.id %>" alt="" />
       <form method="post" action="/profile/photo" enctype="multipart/form-data" style="display:flex;align-items:center;gap:8px">
         <input type="file" name="photo" accept="image/*" required />
-        <button class="btn">Ανέβασμα φωτογραφίας</button>
+        <button class="btn"><%= t('upload_photo') %></button>
       </form>
     </div>
-    <% if (saved) { %><div class="alert ok">Το προφίλ αποθηκεύτηκε.</div><% } %>
-    <% if (error) { %><div class="alert err">Το email και το κινητό είναι υποχρεωτικά.</div><% } %>
-    <% if (me.hotel) { %><p class="muted small">Ξενοδοχείο: <b><%= me.hotel %></b></p><% } %>
+    <% if (saved) { %><div class="alert ok"><%= t('saved') %></div><% } %>
+    <% if (error) { %><div class="alert err"><%= t('email_req') %></div><% } %>
+    <% if (me.hotel) { %><p class="muted small"><%= t('hotel') %>: <b><%= me.hotel %></b></p><% } %>
     <p class="muted small">Ονοματεπώνυμο: <b><%= me.name %></b> · Ρόλος: <%= me.role %> · Username: <%= me.username %></p>
     <form method="post" action="/profile">
-      <label>Email επικοινωνίας</label>
+      <label><%= t('contact_email') %></label>
       <input type="email" name="email" value="<%= me.email || '' %>" placeholder="name@condian.gr" required />
-      <label>Κινητό επικοινωνίας</label>
+      <label><%= t('contact_phone') %></label>
       <input name="phone" value="<%= me.phone || '' %>" placeholder="69xxxxxxxx" required />
       <% if (me.role === 'driver') { %>
-        <label>Τα δρομολόγιά μου</label>
+        <label><%= t('my_routes') %></label>
         <div class="checks">
           <% routes.forEach(function(r){ %>
             <label class="chk"><input type="checkbox" name="route_ids" value="<%= r.id %>" <%= (myRouteIds||[]).includes(r.id) ? 'checked':'' %>> <%= r.name %></label>
@@ -26,39 +26,41 @@
         </div>
         <p class="muted small">Διάλεξε ποια δρομολόγια καλύπτεις.</p>
       <% } else if (me.role === 'staff') { %>
-        <label>Προεπιλεγμένο δρομολόγιο</label>
+        <label><%= t('default_route') %></label>
         <select name="favorite_route_id" id="favRoute" onchange="fillFavStops()">
           <option value="">— Κανένα —</option>
           <% routes.forEach(function(r){ %><option value="<%= r.id %>" <%= me.favorite_route_id===r.id ? 'selected':'' %>><%= r.name %></option><% }) %>
         </select>
-        <label>Προεπιλεγμένη στάση</label>
+        <label><%= t('default_stop') %></label>
         <select name="favorite_stop_id" id="favStop"><option value="">— Καμία —</option></select>
         <p class="muted small">Προ-συμπληρώνονται αυτόματα κατά τη δήλωση (μπορείς πάντα να αλλάξεις).</p>
       <% } %>
       <% if (me.role === 'staff' || me.role === 'driver') { %>
-        <h3 style="margin-top:14px">Ειδοποιήσεις</h3>
-        <label class="opt"><input type="checkbox" name="notify_enabled" value="1" <%= me.notify_enabled ? 'checked':'' %>> Να λαμβάνω ειδοποιήσεις με email</label>
-        <label>Ώρες ειδοποίησης (μπορείς να βάλεις πολλές)</label>
+        <h3 style="margin-top:14px"><%= t('notifications') %></h3>
+        <label class="opt"><input type="checkbox" name="notify_enabled" value="1" <%= me.notify_enabled ? 'checked':'' %>> <%= t('recv_email') %></label>
+        <label><%= t('notify_times') %></label>
         <div id="notifyTimes">
           <% var times=(me.notify_time || (me.role==='driver'?'23:00':'18:00')).split(',').map(function(x){return x.trim();}).filter(Boolean); times.forEach(function(t){ %>
             <div class="ntrow"><input type="time" name="notify_time" value="<%= t %>"> <button type="button" class="iconbtn danger" title="Αφαίρεση" onclick="this.parentNode.remove()">✕</button></div>
           <% }) %>
         </div>
-        <button type="button" class="btn" onclick="addNotifyTime()">+ Προσθήκη ώρας</button>
+        <button type="button" class="btn" onclick="addNotifyTime()"><%= t('add_time') %></button>
         <template id="ntTpl"><div class="ntrow"><input type="time" name="notify_time" value="08:00"> <button type="button" class="iconbtn danger" title="Αφαίρεση" onclick="this.parentNode.remove()">✕</button></div></template>
         <script>function addNotifyTime(){var t=document.getElementById('ntTpl');document.getElementById('notifyTimes').appendChild(t.content.cloneNode(true));}</script>
         <p class="muted small"><% if (me.role==='driver') { %>Ώρες που θα λαμβάνεις το πρόγραμμα παραλαβών.<% } else { %>Ώρες υπενθύμισης για να δηλώσεις τη βάρδιά σου.<% } %></p>
 
         <% if (me.role==='driver') { %>
-          <h3 style="margin-top:10px">Εβδομαδιαία υπενθύμιση</h3>
-          <label class="opt"><input type="checkbox" name="notify_weekly_enabled" value="1" <%= me.notify_weekly_enabled ? 'checked':'' %>> Στείλε μου εβδομαδιαίο πρόγραμμα (7 ημερών)</label>
+          <h3 style="margin-top:10px"><%= t('weekly_reminder') %></h3>
+          <label class="opt"><input type="checkbox" name="notify_weekly_enabled" value="1" <%= me.notify_weekly_enabled ? 'checked':'' %>> <%= t('weekly_send') %></label>
           <div class="grid2">
-            <div><label>Ημέρα</label><select name="notify_weekly_day"><% var days=['Κυριακή','Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο']; days.forEach(function(dn,di){ %><option value="<%= di %>" <%= (me.notify_weekly_day===di)?'selected':'' %>><%= dn %></option><% }) %></select></div>
-            <div><label>Ώρα</label><input type="time" name="notify_weekly_time" value="<%= me.notify_weekly_time || '20:00' %>"></div>
+            <div><label><%= t('day') %></label><select name="notify_weekly_day"><% var days=['Κυριακή','Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο']; days.forEach(function(dn,di){ %><option value="<%= di %>" <%= (me.notify_weekly_day===di)?'selected':'' %>><%= dn %></option><% }) %></select></div>
+            <div><label><%= t('time') %></label><input type="time" name="notify_weekly_time" value="<%= me.notify_weekly_time || '20:00' %>"></div>
           </div>
         <% } %>
       <% } %>
-      <button class="btn primary">Αποθήκευση</button>
+      <label><%= t('language') %></label>
+      <select name="lang"><option value="el" <%= me.lang!=='en'?'selected':'' %>>Ελληνικά</option><option value="en" <%= me.lang==='en'?'selected':'' %>>English</option></select>
+      <button class="btn primary"><%= t('save') %></button>
     </form>
   </div>
   <% if (me.role === 'staff') { %>

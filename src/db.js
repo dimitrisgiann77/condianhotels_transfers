@@ -83,6 +83,7 @@ async function init() {
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS notify_weekly_time TEXT`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS favorite_stop_id INT REFERENCES stops(id) ON DELETE SET NULL`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`);
+  await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS lang TEXT`);
   await q(`CREATE TABLE IF NOT EXISTS activity_log (
     id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE,
     action TEXT, detail TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now()

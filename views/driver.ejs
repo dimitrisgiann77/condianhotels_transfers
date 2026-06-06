@@ -2,9 +2,9 @@
   <% if (msg) { %><div class="alert ok"><%= msg %></div><% } %>
 
   <div class="tabs" id="drvTabs">
-    <button type="button" data-tab="cal" class="active">Ημερολόγιο</button>
-    <button type="button" data-tab="day">Ημέρα</button>
-    <button type="button" data-tab="week">Εβδομάδα</button>
+    <button type="button" data-tab="cal" class="active"><%= t('calendar') %></button>
+    <button type="button" data-tab="day"><%= t('day') %></button>
+    <button type="button" data-tab="week"><%= t('weekly') %></button>
   </div>
 
   <form method="get" action="/driver" id="dateForm" class="row" style="margin-bottom:10px">
@@ -12,17 +12,17 @@
     <button type="button" class="btn" onclick="navDate(-1)" title="Προηγούμενη">◀</button>
     <input type="date" id="dateInp" name="date" value="<%= workDate %>" onchange="this.form.submit()" />
     <button type="button" class="btn" onclick="navDate(1)" title="Επόμενη">▶</button>
-    <button type="button" class="btn" onclick="setDate('<%= today %>')">Σήμερα</button>
-    <button type="button" class="btn" onclick="setDate('<%= tomorrow %>')">Αύριο</button>
+    <button type="button" class="btn" onclick="setDate('<%= today %>')"><%= t('today') %></button>
+    <button type="button" class="btn" onclick="setDate('<%= tomorrow %>')"><%= t('tomorrow') %></button>
     <span class="muted"><%= prettyDate(workDate) %></span>
   </form>
 
   <!-- ΗΜΕΡΟΛΟΓΙΟ -->
   <div class="tab active" id="tab-cal">
     <div class="card">
-      <h1>Εβδομαδιαίο πρόγραμμα</h1>
+      <h1><%= t('pickup_program') %></h1>
       <%- include('partials/weekcal') %>
-      <p class="muted small">Κλικ σε μια μέρα για λεπτομέρειες.</p>
+      <p class="muted small"><%= t('click_day') %></p>
     </div>
   </div>
 
@@ -30,32 +30,32 @@
   <div class="tab" id="tab-day">
     <div class="card">
       <div class="row" style="margin-bottom:8px">
-        <a class="btn" href="/driver/print?date=<%= workDate %>" target="_blank">Εκτύπωση</a>
-        <a class="btn" href="/driver/export.pdf?date=<%= workDate %>">Λήψη PDF</a>
+        <a class="btn" href="/driver/print?date=<%= workDate %>" target="_blank"><%= t('print') %></a>
+        <a class="btn" href="/driver/export.pdf?date=<%= workDate %>"><%= t('download_pdf') %></a>
       </div>
       <div class="seatwrap">
         <% seats.forEach(function(se){ var rem=Math.max(0, se.capacity-se.used); %>
-          <span class="seatchip <%= rem===0?'full':'' %>"><%= se.name %>: <b><%= rem %></b>/<%= se.capacity %> διαθέσιμες</span>
+          <span class="seatchip <%= rem===0?'full':'' %>"><%= se.name %>: <b><%= rem %></b>/<%= se.capacity %> <%= t('seats_available') %></span>
         <% }) %>
       </div>
       <div class="metrics" style="margin-top:10px">
-        <div class="metric"><div class="ml">Εργασία</div><div class="mv ok"><%= counts.work %></div></div>
-        <div class="metric"><div class="ml">Ρεπό</div><div class="mv"><%= counts.off %></div></div>
-        <div class="metric"><div class="ml">Εκκρεμούν</div><div class="mv warn"><%= counts.pending %></div></div>
+        <div class="metric"><div class="ml"><%= t('work') %></div><div class="mv ok"><%= counts.work %></div></div>
+        <div class="metric"><div class="ml"><%= t('off') %></div><div class="mv"><%= counts.off %></div></div>
+        <div class="metric"><div class="ml"><%= t('pending') %></div><div class="mv warn"><%= counts.pending %></div></div>
       </div>
       <div id="map" class="map"></div>
       <% if (!mapsKey) { %><p class="muted small">Πρόσθεσε GOOGLE_MAPS_API_KEY για τον χάρτη.</p><% } %>
     </div>
 
     <% if (pickups.length === 0) { %>
-      <div class="card"><p class="muted">Καμία δήλωση εργασίας ακόμη.</p></div>
+      <div class="card"><p class="muted"><%= t('no_work_decl') %></p></div>
     <% } else {
       const routesMap={}; pickups.forEach(function(p){const rk=p.route||'—';(routesMap[rk]=routesMap[rk]||[]).push(p);});
       Object.keys(routesMap).forEach(function(routeName){ const items=routesMap[routeName]; const stops={};
         items.forEach(function(p){const sk=(p.stop||'')+'|'+(p.pickup_time||'');(stops[sk]=stops[sk]||{stop:p.stop,time:p.pickup_time,people:[]}).people.push(p);});
     %>
       <div class="card route-card">
-        <h2><%= routeName %> <span class="muted small">— <%= items.length %> άτομα</span></h2>
+        <h2><%= routeName %> <span class="muted small">— <%= items.length %> <%= t('people') %></span></h2>
         <% Object.keys(stops).forEach(function(sk){ var g=stops[sk]; %>
           <div class="stopcard">
             <div class="stopcard-head">
@@ -71,10 +71,10 @@
     <div class="card">
       <div class="pendingbox">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-          <h2 style="margin:0">Δεν δήλωσαν ακόμη (<%= pending.length %>)</h2>
-          <% if (pending.length) { %><form method="post" action="/driver/remind-pending" class="inline"><input type="hidden" name="date" value="<%= workDate %>"><button class="btn">Υπενθύμιση σε όλους</button></form><% } %>
+          <h2 style="margin:0"><%= t('not_declared') %> (<%= pending.length %>)</h2>
+          <% if (pending.length) { %><form method="post" action="/driver/remind-pending" class="inline"><input type="hidden" name="date" value="<%= workDate %>"><button class="btn"><%= t('remind_all') %></button></form><% } %>
         </div>
-        <% if (pending.length === 0) { %><p class="ok" style="margin:6px 0 0">Όλο το προσωπικό έχει δηλώσει.</p>
+        <% if (pending.length === 0) { %><p class="ok" style="margin:6px 0 0"><%= t('all_declared') %></p>
         <% } else { pending.forEach(function(p){ %><div class="person"><span class="dot"></span><a class="who-link" onclick="showContact(this)" data-name="<%= p.name %>" data-email="<%= p.email||'' %>" data-phone="<%= p.phone||'' %>" data-extra="<%= p.hotel||'' %>"><%= p.name %></a></div><% }) } %>
       </div>
     </div>
@@ -85,7 +85,7 @@
     <% week.forEach(function(day){ %>
       <div class="card">
         <h2><%= prettyDate(day.date) %></h2>
-        <% if (day.pickups.length===0) { %><p class="muted">Καμία δήλωση.</p>
+        <% if (day.pickups.length===0) { %><p class="muted"><%= t('no_decl') %></p>
         <% } else { const rm={}; day.pickups.forEach(function(p){const k=p.route||'—';(rm[k]=rm[k]||[]).push(p);});
           Object.keys(rm).forEach(function(rn){ %>
           <div class="routehdr"><span><%= rn %></span><span class="ln"></span></div>

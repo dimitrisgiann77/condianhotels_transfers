@@ -1,30 +1,30 @@
 <%- include('partials/header') %>
   <div class="card" style="max-width:560px;margin:5vh auto">
-    <h1>Εγγραφή προσωπικού</h1>
+    <h1><%= t('register_title') %></h1>
     <% if (error) { %><div class="alert err"><%= error %></div><% } %>
     <% if (!enabled) { %>
-      <p class="muted">Η εγγραφή δεν είναι αυτή τη στιγμή διαθέσιμη. Επικοινώνησε με τη διοίκηση.</p>
-      <a class="btn" href="/login">Πίσω στη σύνδεση</a>
+      <p class="muted"><%= t('reg_disabled') %></p>
+      <a class="btn" href="/login"><%= t('have_account') %></a>
     <% } else { %>
     <p class="muted small">Συμπλήρωσε τα στοιχεία σου. Ο λογαριασμός θα ενεργοποιηθεί μόλις τον εγκρίνει η διοίκηση.</p>
     <form method="post" action="/register">
       <div class="grid2">
-        <div><label>Επώνυμο *</label><input name="last_name" required /></div>
-        <div><label>Όνομα *</label><input name="first_name" required /></div>
-        <div><label>Username *</label><input name="username" required /></div>
-        <div><label>Κωδικός *</label><input name="password" type="password" required /></div>
-        <div><label>Email *</label><input name="email" type="email" required /></div>
-        <div><label>Κινητό *</label><input name="phone" required /></div>
+        <div><label><%= t('lastname') %> *</label><input name="last_name" required /></div>
+        <div><label><%= t('firstname') %> *</label><input name="first_name" required /></div>
+        <div><label><%= t('username') %> *</label><input name="username" required /></div>
+        <div><label><%= t('password') %> *</label><input name="password" type="password" required /></div>
+        <div><label><%= t('email') %> *</label><input name="email" type="email" required /></div>
+        <div><label><%= t('phone') %> *</label><input name="phone" required /></div>
       </div>
-      <label>Αγαπημένο δρομολόγιο</label>
+      <label><%= t('default_route') %></label>
       <select name="favorite_route_id">
         <option value="">— Κανένα —</option>
         <% routes.forEach(function(r){ %><option value="<%= r.id %>"><%= r.name %></option><% }) %>
       </select>
-      <label>Κωδικός εγγραφής *</label>
+      <label><%= t('reg_code') %> *</label>
       <input name="code" required placeholder="Δόθηκε από τη διοίκηση" />
-      <button class="btn primary">Εγγραφή</button>
-      <a class="btn" href="/login">Έχω ήδη λογαριασμό</a>
+      <button class="btn primary"><%= t('register_btn') %></button>
+      <a class="btn" href="/login"><%= t('have_account') %></a>
     </form>
     <% } %>
   </div>

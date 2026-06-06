@@ -1,27 +1,27 @@
 <%- include('partials/header') %>
-  <% if (saved) { %><div class="alert ok">Η δήλωσή σου αποθηκεύτηκε.</div><% } %>
+  <% if (saved) { %><div class="alert ok"><%= t('decl_saved') %></div><% } %>
   <% if (typeof msg !== "undefined" && msg) { %><div class="alert ok"><%= msg %></div><% } %>
-  <% if (error === 'full') { %><div class="alert err">Το δρομολόγιο είναι πλήρες (όριο θέσεων). Διάλεξε άλλο δρομολόγιο.</div><% } %>
+  <% if (error === 'full') { %><div class="alert err"><%= t('route_full') %></div><% } %>
 
   <div class="tabs" id="staffTabs">
-    <button type="button" data-tab="cal" class="active">Ημερολόγιο</button>
-    <button type="button" data-tab="declare">Δήλωση</button>
-    <button type="button" data-tab="mine">Οι δηλώσεις μου</button>
+    <button type="button" data-tab="cal" class="active"><%= t('calendar') %></button>
+    <button type="button" data-tab="declare"><%= t('declare') %></button>
+    <button type="button" data-tab="mine"><%= t('my_declarations') %></button>
   </div>
 
   <!-- ΗΜΕΡΟΛΟΓΙΟ -->
   <div class="tab active" id="tab-cal">
     <div class="card">
-      <h1>Το πρόγραμμά μου</h1>
+      <h1><%= t('my_program') %></h1>
       <%- include('partials/weekcal') %>
-      <p class="muted small">Κάνε κλικ σε μια μέρα για να δηλώσεις/αλλάξεις.</p>
+      <p class="muted small"><%= t('click_day') %></p>
     </div>
   </div>
 
   <!-- ΔΗΛΩΣΗ -->
   <div class="tab" id="tab-declare">
     <div class="card">
-      <h1>Δήλωση βάρδιας</h1>
+      <h1><%= t('shift_declaration') %></h1>
       <form method="get" action="/staff" class="row">
         <input type="hidden" name="tab" value="declare" />
         <label>Ημερομηνία</label>
@@ -33,19 +33,19 @@
         <input type="hidden" name="work_date" value="<%= workDate %>" />
         <input type="hidden" name="status" value="work" />
         <div id="workFields">
-          <label>Δρομολόγιο</label>
+          <label><%= t('route') %></label>
           <select name="route_id" id="routeSel" onchange="fillStops()">
-            <option value="">— Διάλεξε δρομολόγιο —</option>
+            <option value=""><%= t('choose_route') %></option>
             <% routes.forEach(function(r){ var used=(usage[r.id]||0); var mineHere=(mine&&mine.status==='work'&&mine.route_id===r.id); var rem=r.capacity-used+(mineHere?1:0); var full=rem<=0; %>
-              <option value="<%= r.id %>" <%= (mine && mine.route_id===r.id) || (!mine && favorite===r.id && !full) ? 'selected':'' %> <%= full && !mineHere ? 'disabled':'' %>><%= r.name %><%= full ? ' — FULL (γεμάτο)' : '' %></option>
+              <option value="<%= r.id %>" <%= (mine && mine.route_id===r.id) || (!mine && favorite===r.id && !full) ? 'selected':'' %> <%= full && !mineHere ? 'disabled':'' %>><%= r.name %><%= full ? ' — ' + t('full') : '' %></option>
             <% }) %>
           </select>
-          <label>Στάση παραλαβής</label>
-          <select name="stop_id" id="stopSel" onchange="showTime()"><option value="">— Διάλεξε στάση —</option></select>
-          <div class="timebox">Ώρα παραλαβής: <b id="timeOut">—</b></div>
-          <div class="timebox">Διαθέσιμες θέσεις: <b id="seatsOut">—</b></div>
+          <label><%= t('stop') %></label>
+          <select name="stop_id" id="stopSel" onchange="showTime()"><option value=""><%= t('choose_stop') %></option></select>
+          <div class="timebox"><%= t('pickup_time') %>: <b id="timeOut">—</b></div>
+          <div class="timebox"><%= t('available_seats') %>: <b id="seatsOut">—</b></div>
         </div>
-        <button class="btn primary" type="submit">Υποβολή δήλωσης</button>
+        <button class="btn primary" type="submit"><%= t('submit_decl') %></button>
       </form>
     </div>
 
@@ -55,17 +55,17 @@
   <!-- ΟΙ ΔΗΛΩΣΕΙΣ ΜΟΥ -->
   <div class="tab" id="tab-mine">
     <div class="card">
-      <h2>Οι δηλώσεις μου</h2>
+      <h2><%= t('my_declarations') %></h2>
       <% if (!myDeclarations || myDeclarations.length === 0) { %>
-        <p class="muted">Δεν έχεις δηλώσεις για τις επόμενες μέρες.</p>
+        <p class="muted"><%= t('no_my_decl') %></p>
       <% } else { %>
         <% myDeclarations.forEach(function(d){ var ds = String(d.work_date).slice(0,10); %>
           <div class="decl">
             <div>
               <div class="d-date"><%= prettyDate(ds) %></div>
-              <div class="d-meta"><% if (d.status==='work') { %><%= d.route || '' %><%= d.stop ? ' · ' + d.stop : '' %><%= d.pickup_time ? ' · ' + d.pickup_time : '' %><% } else { %>Ρεπό<% } %></div>
+              <div class="d-meta"><% if (d.status==='work') { %><%= d.route || '' %><%= d.stop ? ' · ' + d.stop : '' %><%= d.pickup_time ? ' · ' + d.pickup_time : '' %><% } else { %><%= t('off') %><% } %></div>
             </div>
-            <span class="badge <%= d.status==='work'?'work':'off' %>"><%= d.status==='work'?'Εργασία':'Ρεπό' %></span>
+            <span class="badge <%= d.status==='work'?'work':'off' %>"><%= d.status==='work'?t('work'):t('off') %></span>
           </div>
         <% }) %>
       <% } %>
@@ -78,6 +78,7 @@
     const USAGE = <%- JSON.stringify(usage || {}) %>;
     const FAVORITE = <%- JSON.stringify(favorite || null) %>;
     const FAVORITE_STOP = <%- JSON.stringify(favoriteStop || null) %>;
+    const T_CHOOSE_STOP = "<%= t('choose_stop') %>";
     function showSeats(){
       const rid=document.getElementById('routeSel').value;const r=ROUTES.find(x=>String(x.id)===String(rid));const out=document.getElementById('seatsOut');
       if(!r){out.textContent='—';return;}
@@ -85,7 +86,7 @@
       const rem=Math.max(0,r.capacity-used+(mineHere?1:0));out.textContent=rem+' / '+r.capacity+(rem===0?' (πλήρες)':'');
     }
     function fillStops(pre){
-      const rid=document.getElementById('routeSel').value;const sel=document.getElementById('stopSel');sel.innerHTML='<option value="">— Διάλεξε στάση —</option>';
+      const rid=document.getElementById('routeSel').value;const sel=document.getElementById('stopSel');sel.innerHTML='<option value="">'+T_CHOOSE_STOP+'</option>';
       const r=ROUTES.find(x=>String(x.id)===String(rid));
       if(r)r.stops.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name+(s.pickup_time?' — '+s.pickup_time:'');o.dataset.time=s.pickup_time||'';if(pre&&String(pre)===String(s.id))o.selected=true;sel.appendChild(o);});
       showTime();showSeats();

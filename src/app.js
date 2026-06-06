@@ -11,6 +11,7 @@ const mailer = require('./mailer');
 const scheduler = require('./scheduler');
 const pdf = require('./pdf');
 const brand = require('./brand');
+const i18n = require('./i18n');
 const multer = require('multer');
 const avatarUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 3 * 1024 * 1024 } });
 const { requireLogin, requireRole, homeForRole } = require('./auth');
@@ -43,6 +44,9 @@ app.use((req, res, next) => {
   res.locals.publicUrl = process.env.PUBLIC_URL || '';
   res.locals.appVersion = APP_VERSION;
   res.locals.appCommit = APP_COMMIT;
+  const _cm = (req.headers.cookie || '').match(/(?:^|;\s*)lang=(\w+)/);
+  res.locals.lang = (req.session.user && req.session.user.lang) || (_cm ? _cm[1] : null) || 'el';
+  res.locals.t = (k) => i18n.t(res.locals.lang, k);
   res.locals.prettyDate = prettyDate;
   next();
 });
@@ -105,7 +109,7 @@ app.post('/login', async (req, res) => {
     if (!u.active) {
       return res.status(403).render('login', { error: 'Ο λογαριασμός σου αναμένει έγκριση από τη διοίκηση.', info: null });
     }
-    req.session.user = { id: u.id, name: u.name, role: u.role, username: u.username };
+    req.session.user = { id: u.id, name: u.name, role: u.role, username: u.username, lang: u.lang || null };
     try { await q('UPDATE users SET last_login_at=now() WHERE id=$1', [u.id]); await data.logActivity(u.id, 'Σύνδεση', null); } catch (e) {}
     res.redirect(homeForRole(u.role));
   } catch (e) {
@@ -114,6 +118,12 @@ app.post('/login', async (req, res) => {
   }
 });
 app.post('/logout', (req, res) => { req.session.destroy(() => res.redirect('/login')); });
+app.get('/lang/:l', (req, res) => {
+  const l = req.params.l === 'en' ? 'en' : 'el';
+  res.setHeader('Set-Cookie', 'lang=' + l + '; Path=/; Max-Age=31536000; SameSite=Lax');
+  if (req.session.user) { req.session.user.lang = l; q('UPDATE users SET lang=$1 WHERE id=$2', [l, req.session.user.id]).catch(()=>{}); }
+  res.redirect(req.get('referer') || '/');
+});
 
 // ---------- Self-registration (με κωδικό + έγκριση) ----------
 app.get('/register', async (req, res) => {
@@ -163,7 +173,9 @@ app.post('/profile', requireLogin, async (req, res) => {
     notify_weekly_enabled: req.body.notify_weekly_enabled === '1' || req.body.notify_weekly_enabled === 'on',
     notify_weekly_day: req.body.notify_weekly_day,
     notify_weekly_time: (req.body.notify_weekly_time || '').trim() || null,
+    lang: req.body.lang || res.locals.lang,
   });
+  if (req.body.lang) req.session.user.lang = req.body.lang;
   if (req.session.user.role === 'driver') {
     let ids = req.body.route_ids || [];
     if (!Array.isArray(ids)) ids = [ids];
@@ -207,10 +219,11 @@ app.get('/staff', requireRole('staff'), async (req, res) => {
   const w = parseInt(req.query.w || '0', 10) || 0;
   const days = weekDays(mondayOf(todayStr(), w));
   const declMap = await data.getUserDeclMap(req.session.user.id, days);
+  const dn = i18n.dayNames(res.locals.lang);
   const weekcells = days.map((ds, i) => {
     const d = declMap[ds]; let badge = null, lines = [];
     if (d) { if (d.status === 'work') { badge = { text: 'Εργασία', cls: 'work' }; lines = [(d.route || '') + (d.stop ? ' · ' + d.stop : ''), d.pickup_time || ''].filter(Boolean); } else badge = { text: 'Ρεπό', cls: 'off' }; }
-    return { date: ds, dayName: DAYNAMES[i], dayNum: ds.slice(8,10)+'/'+ds.slice(5,7), isToday: ds === todayStr(), badge, lines, href: '/staff?tab=declare&date=' + ds };
+    return { date: ds, dayName: dn[i], dayNum: ds.slice(8,10)+'/'+ds.slice(5,7), isToday: ds === todayStr(), badge, lines, href: '/staff?tab=declare&date=' + ds };
   });
   res.render('staff', { routes, workDate, mine, usage, favorite: me.favorite_route_id, favoriteStop: me.favorite_stop_id,
     saved: req.query.saved === '1', error: req.query.error || null, minDate: todayStr(), myDeclarations, msg: req.query.msg || null,
@@ -297,10 +310,11 @@ app.get('/driver', requireRole('driver', 'admin'), async (req, res) => {
   const week = await data.getWeekPickups(routeIds, workDate, 7);
   const w = parseInt(req.query.w || '0', 10) || 0;
   const calWeek = await data.getWeekPickups(routeIds, mondayOf(todayStr(), w), 7);
+  const dn = i18n.dayNames(res.locals.lang);
   const weekcells = calWeek.map((day, i) => {
     const byRoute = {}; day.pickups.forEach(p => { const k = p.route || '—'; byRoute[k] = (byRoute[k] || 0) + 1; });
     const lines = Object.keys(byRoute).map(rn => rn + ': ' + byRoute[rn]);
-    return { date: day.date, dayName: DAYNAMES[i], dayNum: day.date.slice(8,10)+'/'+day.date.slice(5,7),
+    return { date: day.date, dayName: dn[i], dayNum: day.date.slice(8,10)+'/'+day.date.slice(5,7),
       isToday: day.date === todayStr(),
       badge: day.pickups.length ? { text: day.pickups.length + ' άτομα', cls: 'work' } : null,
       lines, href: '/driver?tab=day&date=' + day.date };

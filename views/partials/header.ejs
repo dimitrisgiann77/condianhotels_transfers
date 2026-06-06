@@ -24,17 +24,18 @@
         <% if (user.role === 'admin' || user.role === 'superuser') { %>
           <a href="/admin">Διαχείριση</a>
           <a href="/admin/stats">Στατιστικά</a>
-          <a href="/driver">Πρόγραμμα</a>
+          <a href="/driver"><%= t('program') %></a>
         <% } else if (user.role === 'driver') { %>
-          <a href="/driver">Πρόγραμμα</a>
+          <a href="/driver"><%= t('program') %></a>
         <% } else { %>
-          <a href="/staff">Αρχική</a>
-          <a href="/staff?tab=declare">Δήλωση μου</a>
-          <a href="/feedback">Αξιολόγηση</a>
+          <a href="/staff"><%= t('home') %></a>
+          <a href="/staff?tab=declare"><%= t('my_declaration') %></a>
+          <a href="/feedback"><%= t('evaluation') %></a>
         <% } %>
-        <a href="/profile">Προφίλ</a>
+        <a href="/profile"><%= t('profile') %></a>
+        <span class="langsw"><a href="/lang/el" class="<%= lang==='el'?'lang-on':'' %>">EL</a>·<a href="/lang/en" class="<%= lang==='en'?'lang-on':'' %>">EN</a></span>
         <img class="navava" src="/avatar/<%= user.id %>" alt="" /><span class="who"><%= user.name %></span>
-        <form method="post" action="/logout" class="inline"><button class="link">Έξοδος</button></form>
+        <form method="post" action="/logout" class="inline"><button class="link"><%= t('logout') %></button></form>
       </nav>
     <% } %>
   </header>

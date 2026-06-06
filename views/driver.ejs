@@ -47,16 +47,15 @@
       <% if (!mapsKey) { %><p class="muted small">Πρόσθεσε GOOGLE_MAPS_API_KEY για τον χάρτη.</p><% } %>
     </div>
 
-    <div class="card">
-      <h2>Στάσεις & επιβάτες</h2>
-      <% if (pickups.length === 0) { %>
-        <p class="muted">Καμία δήλωση εργασίας ακόμη.</p>
-      <% } else {
-        const routesMap={}; pickups.forEach(function(p){const rk=p.route||'—';(routesMap[rk]=routesMap[rk]||[]).push(p);});
-        Object.keys(routesMap).forEach(function(routeName){ const items=routesMap[routeName]; const stops={};
-          items.forEach(function(p){const sk=(p.stop||'')+'|'+(p.pickup_time||'');(stops[sk]=stops[sk]||{stop:p.stop,time:p.pickup_time,people:[]}).people.push(p);});
-      %>
-        <div class="routehdr"><span><%= routeName %></span><span class="ln"></span></div>
+    <% if (pickups.length === 0) { %>
+      <div class="card"><p class="muted">Καμία δήλωση εργασίας ακόμη.</p></div>
+    <% } else {
+      const routesMap={}; pickups.forEach(function(p){const rk=p.route||'—';(routesMap[rk]=routesMap[rk]||[]).push(p);});
+      Object.keys(routesMap).forEach(function(routeName){ const items=routesMap[routeName]; const stops={};
+        items.forEach(function(p){const sk=(p.stop||'')+'|'+(p.pickup_time||'');(stops[sk]=stops[sk]||{stop:p.stop,time:p.pickup_time,people:[]}).people.push(p);});
+    %>
+      <div class="card route-card">
+        <h2><%= routeName %> <span class="muted small">— <%= items.length %> άτομα</span></h2>
         <% Object.keys(stops).forEach(function(sk){ var g=stops[sk]; %>
           <div class="stopcard">
             <div class="stopcard-head">
@@ -66,8 +65,8 @@
             <% g.people.forEach(function(pp){ %><div class="person"><span class="dot"></span><a class="who-link" onclick="showContact(this)" data-name="<%= pp.person %>" data-email="<%= pp.person_email||'' %>" data-phone="<%= pp.person_phone||'' %>" data-extra="<%= pp.person_hotel||'' %>"><%= pp.person %></a></div><% }) %>
           </div>
         <% }) %>
-      <% }) } %>
-    </div>
+      </div>
+    <% }) } %>
 
     <div class="card">
       <div class="pendingbox">

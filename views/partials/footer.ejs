@@ -1,5 +1,5 @@
   </main>
-  <footer class="foot"><%= theme.footer_label %></footer>
+  <footer class="foot"><%= theme.footer_label %><span class="muted"> · v<%= appVersion %><% if (appCommit) { %> · build <%= appCommit %><% } %></span></footer>
   <div id="contactModal" class="cmodal" onclick="if(event.target===this)this.style.display='none'">
     <div class="cbox">
       <button class="cclose" type="button" onclick="document.getElementById('contactModal').style.display='none'">×</button>

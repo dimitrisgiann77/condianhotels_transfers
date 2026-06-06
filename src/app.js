@@ -16,6 +16,8 @@ const { tomorrowStr, prettyDate, todayStr, mondayOf, weekDays, DAYNAMES } = requ
 
 const app = express();
 const APP_TITLE = 'CONDIAN Hotels — Summer Transfers 2026';
+const APP_VERSION = (() => { try { return require('../package.json').version; } catch (e) { return '?'; } })();
+const APP_COMMIT = (process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 7);
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '..', 'views'));
@@ -37,6 +39,8 @@ app.use((req, res, next) => {
   res.locals.mapsKey = process.env.GOOGLE_MAPS_API_KEY || '';
   res.locals.theme = brand.getTheme();
   res.locals.publicUrl = process.env.PUBLIC_URL || '';
+  res.locals.appVersion = APP_VERSION;
+  res.locals.appCommit = APP_COMMIT;
   res.locals.prettyDate = prettyDate;
   next();
 });
@@ -271,10 +275,14 @@ app.get('/driver', requireRole('driver', 'admin'), async (req, res) => {
   const week = await data.getWeekPickups(routeIds, workDate, 7);
   const w = parseInt(req.query.w || '0', 10) || 0;
   const calWeek = await data.getWeekPickups(routeIds, mondayOf(todayStr(), w), 7);
-  const weekcells = calWeek.map((day, i) => ({ date: day.date, dayName: DAYNAMES[i],
-    dayNum: day.date.slice(8,10)+'/'+day.date.slice(5,7), isToday: day.date === todayStr(),
-    badge: day.pickups.length ? { text: day.pickups.length + ' άτομα', cls: 'work' } : null, lines: [],
-    href: '/driver?tab=day&date=' + day.date }));
+  const weekcells = calWeek.map((day, i) => {
+    const byRoute = {}; day.pickups.forEach(p => { const k = p.route || '—'; byRoute[k] = (byRoute[k] || 0) + 1; });
+    const lines = Object.keys(byRoute).map(rn => rn + ': ' + byRoute[rn]);
+    return { date: day.date, dayName: DAYNAMES[i], dayNum: day.date.slice(8,10)+'/'+day.date.slice(5,7),
+      isToday: day.date === todayStr(),
+      badge: day.pickups.length ? { text: day.pickups.length + ' άτομα', cls: 'work' } : null,
+      lines, href: '/driver?tab=day&date=' + day.date };
+  });
   res.render('driver', { workDate, pickups, week, pending, counts, seats,
     minDate: todayStr(), today: todayStr(), tomorrow: tomorrowStr(), msg: req.query.msg || null,
     weekcells, weekLabel: prettyDate(calWeek[0].date) + ' – ' + prettyDate(calWeek[6].date),

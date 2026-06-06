@@ -1,7 +1,7 @@
 const DICT = {
   el: {
     // nav
-    home: 'Αρχική', my_declaration: 'Δήλωση μου', evaluation: 'Αξιολόγηση', profile: 'Προφίλ',
+    home: 'Αρχική', my_declaration: 'Τα Pick up μου', evaluation: 'Αξιολόγηση', profile: 'Προφίλ',
     logout: 'Έξοδος', program: 'Πρόγραμμα',
     // login / register
     signin: 'Σύνδεση', username: 'Όνομα χρήστη', password: 'Κωδικός', enter: 'Είσοδος',
@@ -18,13 +18,13 @@ const DICT = {
     day: 'Ημέρα', time: 'Ώρα', save: 'Αποθήκευση', upload_photo: 'Ανέβασμα φωτογραφίας', language: 'Γλώσσα',
     none: '— Κανένα —', email_req: 'Το email και το κινητό είναι υποχρεωτικά.',
     // staff
-    my_program: 'Το πρόγραμμά μου', click_day: 'Κάνε κλικ σε μια μέρα για να δηλώσεις/αλλάξεις.',
-    shift_declaration: 'Δήλωση βάρδιας', date: 'Ημερομηνία', route: 'Δρομολόγιο', stop: 'Στάση παραλαβής',
+    my_program: 'Το πρόγραμμά μου', click_day: 'Κάνε κλικ σε μια μέρα για το pick up σου.',
+    shift_declaration: 'Δήλωση Pick up', date: 'Ημερομηνία', route: 'Δρομολόγιο', stop: 'Στάση παραλαβής',
     choose_route: '— Διάλεξε δρομολόγιο —', choose_stop: '— Διάλεξε στάση —', pickup_time: 'Ώρα παραλαβής',
-    available_seats: 'Διαθέσιμες θέσεις', submit_decl: 'Υποβολή δήλωσης', my_declarations: 'Οι δηλώσεις μου',
-    no_my_decl: 'Δεν έχεις δηλώσεις για τις επόμενες μέρες.', decl_saved: 'Η δήλωσή σου αποθηκεύτηκε.',
+    available_seats: 'Διαθέσιμες θέσεις', submit_decl: 'Καταχώρηση Pick up', my_declarations: 'Τα Pick up μου',
+    no_my_decl: 'Δεν έχεις pick up για τις επόμενες μέρες.', decl_saved: 'Το pick up σου αποθηκεύτηκε.',
     route_full: 'Το δρομολόγιο είναι πλήρες (όριο θέσεων). Διάλεξε άλλο δρομολόγιο.', full: 'FULL (γεμάτο)',
-    calendar: 'Ημερολόγιο', declare: 'Δήλωση',
+    calendar: 'Ημερολόγιο', declare: 'Pick up',
     // driver
     pickup_program: 'Πρόγραμμα παραλαβών', weekly: 'Εβδομαδιαίο', daily: 'Ημερήσιο',
     today: 'Σήμερα', tomorrow: 'Αύριο', print: 'Εκτύπωση', download_pdf: 'Λήψη PDF',
@@ -39,7 +39,7 @@ const DICT = {
     fb_vehicle_q: 'Όχημα (1-5)', fb_comment: 'Σχόλιο (προαιρετικό)', fb_submit: 'Υποβολή αξιολόγησης', driver: 'Οδηγός',
   },
   en: {
-    home: 'Home', my_declaration: 'My declaration', evaluation: 'Feedback', profile: 'Profile',
+    home: 'Home', my_declaration: 'My pick-ups', evaluation: 'Feedback', profile: 'Profile',
     logout: 'Logout', program: 'Schedule',
     signin: 'Sign in', username: 'Username', password: 'Password', enter: 'Log in',
     register_link: 'Register new account', have_account: 'I already have an account',
@@ -53,13 +53,13 @@ const DICT = {
     weekly_reminder: 'Weekly reminder', weekly_send: 'Send me the weekly schedule (7 days)',
     day: 'Day', time: 'Time', save: 'Save', upload_photo: 'Upload photo', language: 'Language',
     none: '— None —', email_req: 'Email and mobile are required.',
-    my_program: 'My schedule', click_day: 'Click a day to declare/change.',
-    shift_declaration: 'Shift declaration', date: 'Date', route: 'Route', stop: 'Pickup stop',
+    my_program: 'My schedule', click_day: 'Click a day to set your pick-up.',
+    shift_declaration: 'Pick-up request', date: 'Date', route: 'Route', stop: 'Pickup stop',
     choose_route: '— Choose route —', choose_stop: '— Choose stop —', pickup_time: 'Pickup time',
-    available_seats: 'Available seats', submit_decl: 'Submit', my_declarations: 'My declarations',
-    no_my_decl: 'You have no declarations for the coming days.', decl_saved: 'Your declaration has been saved.',
+    available_seats: 'Available seats', submit_decl: 'Submit pick-up', my_declarations: 'My pick-ups',
+    no_my_decl: 'You have no pick-ups for the coming days.', decl_saved: 'Your pick-up has been saved.',
     route_full: 'This route is full (seat limit). Choose another route.', full: 'FULL',
-    calendar: 'Calendar', declare: 'Declaration',
+    calendar: 'Calendar', declare: 'Pick-up',
     pickup_program: 'Pickup schedule', weekly: 'Weekly', daily: 'Daily',
     today: 'Today', tomorrow: 'Tomorrow', print: 'Print', download_pdf: 'Download PDF',
     work: 'Working', off: 'Off', pending: 'Pending', stops_passengers: 'Stops & passengers',

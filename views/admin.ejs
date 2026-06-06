@@ -215,7 +215,7 @@
           <select name="hotel"><option value="">—</option><% hotels.forEach(function(hh){ %><option value="<%= hh %>"><%= hh %></option><% }) %></select>
         </div>
         <div><label>Υπεύθυνος</label>
-          <select name="supervisor_id"><option value="">—</option><% supervisors.forEach(function(sp){ %><option value="<%= sp.id %>"><%= sp.name %></option><% }) %></select>
+          <select name="supervisor_id"><option value="">—</option><% supervisors.forEach(function(sp){ %><option value="<%= sp.id %>"><%= sp.name %> (<%= sp.role %>)</option><% }) %></select>
         </div>
         <div><label>Ρόλος</label>
           <select name="role"><option value="staff">Προσωπικό</option><option value="driver">Οδηγός</option><option value="superuser">Superuser</option><option value="admin">Admin</option></select>
@@ -233,7 +233,7 @@
         <div><label>Email *</label><input name="email" type="email" value="<%= editUser.email || '' %>" required /></div>
         <div><label>Κινητό *</label><input name="phone" value="<%= editUser.phone || '' %>" required /></div>
         <div><label>Ξενοδοχείο</label><select name="hotel"><option value="">—</option><% hotels.forEach(function(hh){ %><option value="<%= hh %>" <%= editUser.hotel===hh?'selected':'' %>><%= hh %></option><% }) %></select></div>
-        <div><label>Υπεύθυνος</label><select name="supervisor_id"><option value="">—</option><% supervisors.forEach(function(sp){ %><option value="<%= sp.id %>" <%= editUser.supervisor_id===sp.id?'selected':'' %>><%= sp.name %></option><% }) %></select></div>
+        <div><label>Υπεύθυνος</label><select name="supervisor_id"><option value="">—</option><% supervisors.forEach(function(sp){ %><option value="<%= sp.id %>" <%= editUser.supervisor_id===sp.id?'selected':'' %>><%= sp.name %> (<%= sp.role %>)</option><% }) %></select></div>
         <div><label>Ρόλος</label><select name="role"><% ['staff','driver','superuser','admin'].forEach(function(rr){ %><option value="<%= rr %>" <%= editUser.role===rr?'selected':'' %>><%= rr %></option><% }) %></select></div>
         <div class="end"><button class="btn primary">Αποθήκευση</button> <a class="btn" href="/admin?tab=users">Άκυρο</a></div>
       </form>

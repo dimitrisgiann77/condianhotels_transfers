@@ -162,3 +162,15 @@ td.grip{cursor:grab;color:var(--accent);font-size:16px;text-align:center}
 .langsw{font-size:12px;margin-left:4px}
 .langsw a{color:var(--navy2);text-decoration:none;padding:0 2px}
 .langsw a.lang-on{font-weight:bold;color:var(--accent)}
+
+/* --- user dropdown menu --- */
+.usermenu{position:relative}
+.usermenu-btn{display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--line);border-radius:20px;padding:4px 10px 4px 4px;cursor:pointer;color:var(--header-text);font-size:14px}
+.usermenu-btn .who{color:var(--header-text)}
+.usermenu-panel{position:absolute;right:0;top:calc(100% + 6px);background:var(--card-bg);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:210px;display:none;z-index:60;padding:6px}
+.usermenu-panel.open{display:block}
+.usermenu-panel a,.usermenu-panel .usermenu-link{display:block;width:100%;text-align:left;padding:9px 12px;color:var(--text);text-decoration:none;border:none;background:none;cursor:pointer;font-size:14px;border-radius:6px}
+.usermenu-panel a:hover,.usermenu-panel .usermenu-link:hover{background:var(--page-bg)}
+.usermenu-lang{display:flex;gap:6px;align-items:center;padding:8px 12px;border-top:1px solid var(--line);margin-top:4px}
+.usermenu-lang a{display:inline;padding:0 2px;color:var(--navy2)}
+.usermenu-lang a.lang-on{font-weight:bold;color:var(--accent)}

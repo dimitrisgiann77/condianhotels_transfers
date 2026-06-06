@@ -226,7 +226,7 @@ async function listQuestions() {
 }
 
 async function getSupervisors() {
-  const { rows } = await q("SELECT id, name FROM users WHERE role IN ('admin','superuser') AND active=TRUE ORDER BY name");
+  const { rows } = await q("SELECT id, name, role FROM users WHERE role IN ('admin','superuser') AND active=TRUE ORDER BY name");
   return rows;
 }
 async function getUsersAdmin() {

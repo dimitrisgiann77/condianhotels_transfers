@@ -20,23 +20,33 @@
       <div class="brand"><b><%= theme.app_title %></b></div>
     </a>
     <% if (user) { %>
-      <nav class="nav">
-        <% if (user.role === 'admin' || user.role === 'superuser') { %>
-          <a href="/admin">Διαχείριση</a>
-          <a href="/admin/stats">Στατιστικά</a>
-          <a href="/driver"><%= t('program') %></a>
-        <% } else if (user.role === 'driver') { %>
-          <a href="/driver"><%= t('program') %></a>
-        <% } else { %>
-          <a href="/staff"><%= t('home') %></a>
-          <a href="/staff?tab=declare"><%= t('my_declaration') %></a>
-          <a href="/feedback"><%= t('evaluation') %></a>
-        <% } %>
-        <a href="/profile"><%= t('profile') %></a>
-        <span class="langsw"><a href="/lang/el" class="<%= lang==='el'?'lang-on':'' %>">EL</a>·<a href="/lang/en" class="<%= lang==='en'?'lang-on':'' %>">EN</a></span>
-        <img class="navava" src="/avatar/<%= user.id %>" alt="" /><span class="who"><%= user.name %></span>
-        <form method="post" action="/logout" class="inline"><button class="link"><%= t('logout') %></button></form>
-      </nav>
+      <div class="usermenu">
+        <button type="button" class="usermenu-btn" onclick="toggleUserMenu(event)">
+          <img class="navava" src="/avatar/<%= user.id %>" alt="" />
+          <span class="who"><%= user.name %></span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="usermenu-panel" id="userPanel">
+          <% if (user.role === 'admin' || user.role === 'superuser') { %>
+            <a href="/admin">Διαχείριση</a>
+            <a href="/admin/stats">Στατιστικά</a>
+            <a href="/driver"><%= t('program') %></a>
+          <% } else if (user.role === 'driver') { %>
+            <a href="/driver"><%= t('program') %></a>
+          <% } else { %>
+            <a href="/staff"><%= t('home') %></a>
+            <a href="/staff?tab=declare"><%= t('my_declaration') %></a>
+            <a href="/feedback"><%= t('evaluation') %></a>
+          <% } %>
+          <a href="/profile"><%= t('profile') %></a>
+          <div class="usermenu-lang"><span class="muted small"><%= t('language') %>:</span> <a href="/lang/el" class="<%= lang==='el'?'lang-on':'' %>">EL</a> · <a href="/lang/en" class="<%= lang==='en'?'lang-on':'' %>">EN</a></div>
+          <form method="post" action="/logout"><button type="submit" class="usermenu-link"><%= t('logout') %></button></form>
+        </div>
+      </div>
     <% } %>
   </header>
+  <script>
+    function toggleUserMenu(e){ e.stopPropagation(); var p=document.getElementById('userPanel'); if(p) p.classList.toggle('open'); }
+    document.addEventListener('click', function(){ var p=document.getElementById('userPanel'); if(p) p.classList.remove('open'); });
+  </script>
   <main class="container">

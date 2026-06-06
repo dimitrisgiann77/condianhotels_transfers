@@ -12,7 +12,7 @@ const THEME_DEFAULTS = {
   page_bg: '#f3f5f7', card_bg: '#ffffff', text: '#1d2b33',
   primary: '#193847', primary_text: '#ffffff', link: '#275671',
   th_bg: '#193847', th_text: '#ffffff', footer_text: '#99a3a8',
-  font: 'Arial, Helvetica, sans-serif', font_size: '15', radius: '10', logo_height: '38',
+  font: 'Arial, Helvetica, sans-serif', font_size: '15', radius: '10', logo_height: '38', login_logo_height: '64',
   app_title: 'CONDIAN', footer_label: 'CONDIAN Hotels - All rights reserved 2026',
   show_title: '1', login_message: '', custom_css: '',
 };
@@ -85,12 +85,12 @@ function cssVars() {
 --page-bg:${t.page_bg};--card-bg:${t.card_bg};--text:${t.text};
 --primary:${t.primary};--primary-text:${t.primary_text};--link:${t.link};
 --th-bg:${t.th_bg};--th-text:${t.th_text};--footer-text:${t.footer_text};
---radius:${parseInt(t.radius||'10',10)}px;--fs:${parseInt(t.font_size||'15',10)}px;--font:${t.font};--logo-h:${parseInt(t.logo_height||'38',10)}px;
+--radius:${parseInt(t.radius||'10',10)}px;--fs:${parseInt(t.font_size||'15',10)}px;--font:${t.font};--logo-h:${parseInt(t.logo_height||'38',10)}px;--login-logo-h:${parseInt(t.login_logo_height||'64',10)}px;
 }
 body{background:var(--page-bg);color:var(--text);font-family:var(--font);font-size:var(--fs)}
 .topbar{background:var(--header-bg);border-bottom-color:var(--accent)}
 .brand b{color:var(--header-text)} .nav a{color:var(--header-text)} .nav a:hover{color:var(--header-text)} .who{color:var(--header-text)}
-.brand-logo{height:var(--logo-h)}
+.brand-logo{height:var(--logo-h)} .login-logo{height:var(--login-logo-h)}
 ${t.show_title === '1' ? '' : '.brand b{display:none}'}
 .card{background:var(--card-bg);border-radius:var(--radius)}
 .btn.primary{background:var(--primary);color:var(--primary-text);border-color:var(--primary)}

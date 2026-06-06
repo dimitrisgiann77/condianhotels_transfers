@@ -19,7 +19,6 @@
         <% if (user.role === 'admin' || user.role === 'superuser') { %>
           <a href="/admin">Διαχείριση</a>
           <a href="/admin/stats">Στατιστικά</a>
-          <a href="/admin/questions">Ερωτήματα</a>
           <a href="/driver">Πρόγραμμα</a>
         <% } else if (user.role === 'driver') { %>
           <a href="/driver">Πρόγραμμα</a>

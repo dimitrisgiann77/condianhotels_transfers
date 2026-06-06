@@ -230,18 +230,9 @@ app.get('/driver/print', requireRole('driver', 'admin'), async (req, res) => {
   const s = await fetchSchedule(req.session.user, req.query.date);
   res.render('driver_print', s);
 });
-app.get('/driver/export.csv', requireRole('driver', 'admin'), async (req, res) => {
-  const s = await fetchSchedule(req.session.user, req.query.date);
-  const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-  let csv = ['Δρομολόγιο', 'Στάση', 'Ώρα', 'Όνομα'].map(esc).join(',') + '\r\n';
-  s.pickups.forEach(p => { csv += [p.route, p.stop, p.pickup_time, p.person].map(esc).join(',') + '\r\n'; });
-  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="transfers-${s.workDate}.csv"`);
-  res.send('\ufeff' + csv);
-});
 app.get('/driver/export.pdf', requireRole('driver', 'admin'), async (req, res) => {
   const s = await fetchSchedule(req.session.user, req.query.date);
-  pdf.streamSchedule(res, s);
+  await pdf.streamSchedule(res, s);
 });
 
 // ---------- Admin ----------

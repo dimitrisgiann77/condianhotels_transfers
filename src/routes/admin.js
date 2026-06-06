@@ -20,8 +20,9 @@ router.get('/', async (req, res) => {
   for (const d of drivers) driverRoutes[d.id] = await data.getDriverRouteIds(d.id);
   const pendingUsers = await data.getPendingUsers();
   const regCode = await data.getSetting('reg_code');
+  const questions = await data.listQuestions();
   res.render('admin', {
-    routes, users, drivers, driverRoutes, colors: brand.getColors(), pendingUsers, regCode,
+    routes, users, drivers, driverRoutes, colors: brand.getColors(), pendingUsers, regCode, questions,
     allRoutes: routes,
     msg: req.query.msg || null,
     tomorrow: tomorrowStr(),
@@ -50,6 +51,17 @@ router.post('/routes/reorder', async (req, res) => {
   if (!Array.isArray(ids)) ids = [];
   for (let i = 0; i < ids.length; i++) {
     await q('UPDATE routes SET sort_order=$1 WHERE id=$2', [i + 1, parseInt(ids[i], 10)]);
+  }
+  res.json({ ok: true });
+});
+router.post('/stops/reorder', async (req, res) => {
+  let orders = req.body.orders || [];
+  if (!Array.isArray(orders)) orders = [];
+  for (const arr of orders) {
+    if (!Array.isArray(arr)) continue;
+    for (let i = 0; i < arr.length; i++) {
+      await q('UPDATE stops SET sort_order=$1 WHERE id=$2', [i + 1, parseInt(arr[i], 10)]);
+    }
   }
   res.json({ ok: true });
 });
@@ -162,7 +174,7 @@ router.get('/questions', async (req, res) => {
 router.post('/question/:id/answer', async (req, res) => {
   await q('UPDATE questions SET answer=$1, answered_at=now() WHERE id=$2',
     [(req.body.answer || '').trim() || null, req.params.id]);
-  res.redirect('/admin/questions?msg=' + encodeURIComponent('Η απάντηση αποθηκεύτηκε'));
+  res.redirect('/admin?tab=questions&msg=' + encodeURIComponent('Η απάντηση αποθηκεύτηκε'));
 });
 
 // ----- Branding -----

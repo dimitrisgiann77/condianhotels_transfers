@@ -111,3 +111,8 @@ input[readonly]{background:#f3f3f3}
 .sortlist .grip{color:var(--accent);cursor:grab;font-size:18px;line-height:1}
 .sortlist .ord-btns{margin-left:auto;display:flex;gap:4px}
 .sortlist .ord-btns button{border:1px solid var(--line);background:var(--card-bg);border-radius:6px;cursor:pointer;padding:2px 8px;color:var(--text)}
+
+td.grip{cursor:grab;color:var(--accent);font-size:16px;text-align:center}
+.sortrows tr{cursor:move}
+.sortrows tr.dragging{opacity:.5}
+.ord-mini{border:1px solid var(--line);background:var(--card-bg);border-radius:5px;cursor:pointer;padding:1px 6px;color:var(--text);font-size:12px}

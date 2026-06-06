@@ -5,6 +5,7 @@
     <button type="button" data-tab="overview" class="active">Επισκόπηση</button>
     <button type="button" data-tab="routes">Δρομολόγια</button>
     <button type="button" data-tab="users">Χρήστες & Οδηγοί</button>
+    <button type="button" data-tab="questions">Ερωτήματα</button>
     <% if (user.role === 'admin') { %><button type="button" data-tab="appearance">Εμφάνιση</button><% } %>
   </div>
 
@@ -53,6 +54,17 @@
         </table>
       <% } %>
     </div>
+
+    <div class="card">
+      <h2>Ερωτήματα προσωπικού</h2>
+      <% var unanswered = questions.filter(function(q){return !q.answer;}).length; %>
+      <p>Αναπάντητα: <b class="warn"><%= unanswered %></b> · Σύνολο: <%= questions.length %></p>
+      <% questions.slice(0,3).forEach(function(q){ %>
+        <div class="decl"><div><div class="d-date"><%= q.person %></div><div class="d-meta"><%= q.message.length>80 ? q.message.slice(0,80)+'…' : q.message %></div></div><span class="badge <%= q.answer?'work':'off' %>"><%= q.answer?'Απαντημένο':'Νέο' %></span></div>
+      <% }) %>
+      <% if (questions.length===0) { %><p class="muted">Κανένα ερώτημα.</p><% } %>
+      <button type="button" class="btn" onclick="adminActivate('questions')">Όλα τα ερωτήματα</button>
+    </div>
   </div>
 
   <!-- ============ ΔΡΟΜΟΛΟΓΙΑ ============ -->
@@ -88,15 +100,17 @@
             </form>
           </div>
           <table class="tbl">
-            <thead><tr><th>#</th><th>Στάση</th><th>Ώρα</th><th>Πινέζα</th><th></th></tr></thead>
-            <tbody>
+            <thead><tr><th></th><th>Στάση</th><th>Ώρα</th><th>Πινέζα</th><th></th></tr></thead>
+            <tbody class="sortrows" data-route-id="<%= r.id %>">
             <% r.stops.forEach(function(s){ %>
-              <tr>
-                <td><%= s.sort_order %></td>
+              <tr draggable="true" data-stop-id="<%= s.id %>">
+                <td class="grip">≡</td>
                 <td><%= s.name %></td>
                 <td><%= s.pickup_time || '' %></td>
                 <td><%= (s.lat!=null && s.lng!=null) ? '✓' : '—' %></td>
-                <td>
+                <td class="nowrap">
+                  <button type="button" class="ord-mini" onclick="moveRow(this,-1)">▲</button>
+                  <button type="button" class="ord-mini" onclick="moveRow(this,1)">▼</button>
                   <a class="link" href="/admin?stop=<%= s.id %>#stopForm">Επεξεργασία</a>
                   <form method="post" action="/admin/stop/<%= s.id %>/delete" class="inline" onsubmit="return confirm('Διαγραφή στάσης;')"><button class="link danger">×</button></form>
                 </td>
@@ -106,6 +120,11 @@
           </table>
         </div>
       <% }) %>
+
+      <div style="margin:8px 0">
+        <button class="btn" type="button" onclick="saveStopsOrder()">Αποθήκευση σειράς στάσεων</button>
+        <span id="stopsMsg" class="muted small" style="margin-left:8px"></span>
+      </div>
 
       <h3>Νέο δρομολόγιο</h3>
       <form method="post" action="/admin/route" class="row">
@@ -248,6 +267,29 @@
     </div>
   </div>
 
+  <!-- ============ ΕΡΩΤΗΜΑΤΑ ============ -->
+  <div class="tab" id="tab-questions">
+    <div class="card">
+      <h1>Ερωτήματα προσωπικού</h1>
+      <% if (questions.length === 0) { %><p class="muted">Δεν υπάρχουν ερωτήματα.</p><% } %>
+      <% questions.forEach(function(q){ %>
+        <div class="route">
+          <div class="route-head">
+            <strong><%= q.person %></strong>
+            <span class="muted small"><%= q.person_email || '' %> · <%= new Date(q.created_at).toLocaleString('el-GR') %></span>
+            <% if (!q.answer) { %><span class="badge off">Αναπάντητο</span><% } else { %><span class="badge on">Απαντήθηκε</span><% } %>
+          </div>
+          <p style="margin:6px 0"><%= q.message %></p>
+          <form method="post" action="/admin/question/<%= q.id %>/answer">
+            <label>Απάντηση</label>
+            <textarea name="answer" rows="2" style="width:100%;padding:9px 10px;border:1px solid #ccc;border-radius:7px;font-family:inherit;font-size:14px"><%= q.answer || '' %></textarea>
+            <button class="btn">Αποθήκευση απάντησης</button>
+          </form>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
   <!-- ============ ΕΜΦΑΝΙΣΗ ============ -->
   <% if (user.role === 'admin') { %>
   <div class="tab" id="tab-appearance">
@@ -311,7 +353,8 @@
           </div>
           <div><label>Μέγεθος βάσης (px)</label><input type="number" id="font_size" name="font_size" min="11" max="22" value="<%= theme.font_size %>" oninput="pv()"></div>
           <div><label>Στρογγυλεμένες γωνίες (px)</label><input type="number" id="radius" name="radius" min="0" max="30" value="<%= theme.radius %>" oninput="pv()"></div>
-          <div><label>Ύψος λογοτύπου (px)</label><input type="number" id="logo_height" name="logo_height" min="20" max="80" value="<%= theme.logo_height %>" oninput="pv()"></div>
+          <div><label>Ύψος λογοτύπου μπάρας (px)</label><input type="number" id="logo_height" name="logo_height" min="20" max="120" value="<%= theme.logo_height %>" oninput="pv()"></div>
+          <div><label>Ύψος λογοτύπου σύνδεσης (px)</label><input type="number" id="login_logo_height" name="login_logo_height" min="32" max="200" value="<%= theme.login_logo_height %>"></div>
         </div>
         <h3>Κείμενα</h3>
         <div class="grid2">
@@ -378,8 +421,11 @@
         try{localStorage.setItem('adminTab',name);}catch(e){}
       }
       tabs.forEach(function(b){b.addEventListener('click',function(){activate(b.dataset.tab);});});
+      window.adminActivate=activate;
       var initial='overview';
-      if(window.ADMIN_STOP) initial='routes';
+      var qp=new URLSearchParams(location.search).get('tab');
+      if(qp) initial=qp;
+      else if(window.ADMIN_STOP) initial='routes';
       else { try{var t=localStorage.getItem('adminTab'); if(t) initial=t;}catch(e){} }
       activate(initial);
       if(window.ADMIN_STOP){var sf=document.getElementById('stopForm'); if(sf) sf.scrollIntoView();}
@@ -388,34 +434,32 @@
   </script>
   <script>
     (function(){
-      var list=document.getElementById('routeOrder'); if(!list) return;
-      var dragEl=null;
-      list.querySelectorAll('li').forEach(function(li){
-        li.addEventListener('dragstart',function(){dragEl=li;li.classList.add('dragging');});
-        li.addEventListener('dragend',function(){li.classList.remove('dragging');});
-      });
-      list.addEventListener('dragover',function(e){
-        e.preventDefault();
-        var els=[].slice.call(list.querySelectorAll('li:not(.dragging)'));
-        var after=els.reduce(function(closest,child){
-          var box=child.getBoundingClientRect();var offset=e.clientY-box.top-box.height/2;
-          if(offset<0&&offset>closest.offset)return{offset:offset,element:child};return closest;
-        },{offset:-Infinity}).element;
-        if(!dragEl)return; if(after==null)list.appendChild(dragEl);else list.insertBefore(dragEl,after);
-      });
+      function initSortable(c){
+        if(!c) return;
+        c.addEventListener('dragover',function(e){
+          e.preventDefault();
+          var dragging=c.querySelector('.dragging'); if(!dragging)return;
+          var items=[].slice.call(c.children).filter(function(x){return x!==dragging && x.getAttribute('draggable')==='true';});
+          var after=items.reduce(function(cl,ch){var b=ch.getBoundingClientRect();var off=e.clientY-b.top-b.height/2;if(off<0&&off>cl.offset)return{offset:off,element:ch};return cl;},{offset:-Infinity}).element;
+          if(after==null)c.appendChild(dragging);else c.insertBefore(dragging,after);
+        });
+        [].slice.call(c.children).forEach(function(it){
+          if(it.getAttribute('draggable')!=='true')return;
+          it.addEventListener('dragstart',function(){it.classList.add('dragging');});
+          it.addEventListener('dragend',function(){it.classList.remove('dragging');});
+        });
+      }
       window.moveRow=function(btn,dir){
-        var li=btn.closest('li');
-        if(dir<0&&li.previousElementSibling)list.insertBefore(li,li.previousElementSibling);
-        if(dir>0&&li.nextElementSibling)list.insertBefore(li.nextElementSibling,li);
+        var it=btn.closest('li,tr'); var pp=it.parentNode;
+        if(dir<0&&it.previousElementSibling)pp.insertBefore(it,it.previousElementSibling);
+        if(dir>0&&it.nextElementSibling)pp.insertBefore(it.nextElementSibling,it);
       };
-      window.saveOrder=function(){
-        var ids=[].slice.call(list.querySelectorAll('li')).map(function(li){return li.dataset.id;});
-        document.getElementById('orderMsg').textContent='Αποθήκευση…';
-        fetch('/admin/routes/reorder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids})})
-          .then(function(r){return r.json();})
-          .then(function(){document.getElementById('orderMsg').textContent='Αποθηκεύτηκε ✓ (θα φανεί μετά από ανανέωση)';})
-          .catch(function(){document.getElementById('orderMsg').textContent='Σφάλμα αποθήκευσης';});
-      };
+      function post(url,body,msgId){var m=document.getElementById(msgId);if(m)m.textContent='Αποθήκευση…';
+        fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(){if(m)m.textContent='Αποθηκεύτηκε ✓ (ανανέωσε για ενημέρωση)';}).catch(function(){if(m)m.textContent='Σφάλμα';});}
+      initSortable(document.getElementById('routeOrder'));
+      [].slice.call(document.querySelectorAll('tbody.sortrows')).forEach(initSortable);
+      window.saveOrder=function(){var l=document.getElementById('routeOrder');if(!l)return;var ids=[].slice.call(l.querySelectorAll('li')).map(function(li){return li.dataset.id;});post('/admin/routes/reorder',{ids:ids},'orderMsg');};
+      window.saveStopsOrder=function(){var orders=[].slice.call(document.querySelectorAll('tbody.sortrows')).map(function(tb){return [].slice.call(tb.querySelectorAll('tr')).map(function(tr){return tr.dataset.stopId;});});post('/admin/stops/reorder',{orders:orders},'stopsMsg');};
     })();
   </script>
   <% if (mapsKey) { %>

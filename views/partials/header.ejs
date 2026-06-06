@@ -28,11 +28,12 @@
         <% } else if (user.role === 'driver') { %>
           <a href="/driver">Πρόγραμμα</a>
         <% } else { %>
-          <a href="/staff">Η δήλωσή μου</a>
+          <a href="/staff">Αρχική</a>
+          <a href="/staff?tab=declare">Δήλωση μου</a>
           <a href="/feedback">Αξιολόγηση</a>
         <% } %>
         <a href="/profile">Προφίλ</a>
-        <span class="who"><%= user.name %></span>
+        <img class="navava" src="/avatar/<%= user.id %>" alt="" /><span class="who"><%= user.name %></span>
         <form method="post" action="/logout" class="inline"><button class="link">Έξοδος</button></form>
       </nav>
     <% } %>

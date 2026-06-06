@@ -1,0 +1,29 @@
+<%- include('partials/header') %>
+  <div class="card">
+    <a class="link" href="/admin?tab=users">← Πίσω στους χρήστες</a>
+    <h1><%= u.name %></h1>
+    <p class="muted small">Ρόλος: <%= u.role %> · Username: <%= u.username %><%= u.hotel ? ' · Ξενοδοχείο: '+u.hotel : '' %></p>
+    <div class="metrics" style="grid-template-columns:repeat(2,1fr)">
+      <div class="metric"><div class="ml">Τελευταία σύνδεση</div><div class="mv" style="font-size:16px"><%= u.last_login_at ? new Date(u.last_login_at).toLocaleString('el-GR') : '—' %></div></div>
+      <div class="metric"><div class="ml">Επικοινωνία</div><div class="mv" style="font-size:16px"><%= u.email || '—' %><br><span class="muted small"><%= u.phone || '' %></span></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Ιστορικό ενεργειών</h2>
+    <% if (activities.length===0) { %><p class="muted">Καμία ενέργεια.</p><% } else { %>
+      <table class="tbl"><thead><tr><th>Ημ/νία</th><th>Ενέργεια</th><th>Λεπτομέρειες</th></tr></thead><tbody>
+      <% activities.forEach(function(a){ %><tr><td class="nowrap"><%= new Date(a.created_at).toLocaleString('el-GR') %></td><td><%= a.action %></td><td><%= a.detail||'' %></td></tr><% }) %>
+      </tbody></table>
+    <% } %>
+  </div>
+
+  <div class="card">
+    <h2>Emails προς τον χρήστη</h2>
+    <% if (emails.length===0) { %><p class="muted">Κανένα email.</p><% } else { %>
+      <table class="tbl"><thead><tr><th>Ημ/νία</th><th>Θέμα</th><th>Κατάσταση</th></tr></thead><tbody>
+      <% emails.forEach(function(e){ %><tr><td class="nowrap"><%= new Date(e.created_at).toLocaleString('el-GR') %></td><td><%= e.subject||'' %></td><td><span class="badge <%= e.status==='sent'?'work':'off' %>"><%= e.status %></span><% if(e.error){ %> <span class="muted small" title="<%= e.error %>">⚠</span><% } %></td></tr><% }) %>
+      </tbody></table>
+    <% } %>
+  </div>
+<%- include('partials/footer') %>

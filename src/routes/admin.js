@@ -249,4 +249,12 @@ router.post('/hotels', adminOnly, async (req, res) => {
   res.redirect('/admin?tab=users&msg=' + encodeURIComponent('Η λίστα ξενοδοχείων ενημερώθηκε'));
 });
 
+router.get('/user/:id/activity', async (req, res) => {
+  const u = (await q('SELECT * FROM users WHERE id=$1', [req.params.id])).rows[0];
+  if (!u) return res.redirect('/admin?tab=users');
+  const activities = await data.getUserActivity(u.id);
+  const emails = u.email ? await data.getEmailLogFor(u.email) : [];
+  res.render('admin_activity', { u, activities, emails });
+});
+
 module.exports = router;

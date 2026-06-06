@@ -231,7 +231,7 @@ async function getSupervisors() {
 }
 async function getUsersAdmin() {
   const { rows } = await q(`
-    SELECT u.id,u.name,u.email,u.phone,u.username,u.role,u.active,u.hotel,
+    SELECT u.id,u.name,u.email,u.phone,u.username,u.role,u.active,u.hotel,u.last_login_at,
            sup.name AS supervisor_name, u.supervisor_id
     FROM users u LEFT JOIN users sup ON sup.id=u.supervisor_id
     ORDER BY u.role, u.hotel NULLS FIRST, u.name`);
@@ -243,6 +243,18 @@ async function getHotels() {
   return v.split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
 }
 
+async function logActivity(userId, action, detail) {
+  try { await q('INSERT INTO activity_log (user_id,action,detail) VALUES ($1,$2,$3)', [userId, action, detail || null]); }
+  catch (e) { console.error('[activity] log failed:', e.message); }
+}
+async function getUserActivity(userId, limit = 100) {
+  const { rows } = await q('SELECT action, detail, created_at FROM activity_log WHERE user_id=$1 ORDER BY created_at DESC LIMIT $2', [userId, limit]);
+  return rows;
+}
+async function getEmailLogFor(email, limit = 100) {
+  const { rows } = await q('SELECT subject, status, error, created_at FROM email_log WHERE to_email=$1 ORDER BY created_at DESC LIMIT $2', [email, limit]);
+  return rows;
+}
 async function getEmailLog(limit = 80) {
   const { rows } = await q(`SELECT to_email, subject, status, error, created_at FROM email_log ORDER BY created_at DESC LIMIT $1`, [limit]);
   return rows;
@@ -254,5 +266,6 @@ module.exports = {
   getRouteUsage, countOnRoute, getUser, updateProfile, getMyDeclarations,
   getSetting, setSetting, getPendingUsers, getStaffDue, getDriversDue,
   getSupervisors, getUsersAdmin, getHotels, getDriversWeeklyDue, getWeekPickups, getUserDeclMap, getEmailLog,
+  logActivity, getUserActivity, getEmailLogFor,
   routeStats, staffStats, ratingAverages, ratingByDriver, recentRatings, listQuestions,
 };

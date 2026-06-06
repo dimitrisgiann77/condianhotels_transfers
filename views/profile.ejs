@@ -1,6 +1,13 @@
 <%- include('partials/header') %>
   <div class="card" style="max-width:520px">
     <h1>Το προφίλ μου</h1>
+    <div style="display:flex;align-items:center;gap:14px;margin:8px 0 14px">
+      <img class="avatar-lg" src="/avatar/<%= me.id %>" alt="" />
+      <form method="post" action="/profile/photo" enctype="multipart/form-data" style="display:flex;align-items:center;gap:8px">
+        <input type="file" name="photo" accept="image/*" required />
+        <button class="btn">Ανέβασμα φωτογραφίας</button>
+      </form>
+    </div>
     <% if (saved) { %><div class="alert ok">Το προφίλ αποθηκεύτηκε.</div><% } %>
     <% if (error) { %><div class="alert err">Το email και το κινητό είναι υποχρεωτικά.</div><% } %>
     <% if (me.hotel) { %><p class="muted small">Ξενοδοχείο: <b><%= me.hotel %></b></p><% } %>

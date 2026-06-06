@@ -82,6 +82,11 @@ async function init() {
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS notify_weekly_day INT`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS notify_weekly_time TEXT`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS favorite_stop_id INT REFERENCES stops(id) ON DELETE SET NULL`);
+  await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`);
+  await q(`CREATE TABLE IF NOT EXISTS activity_log (
+    id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    action TEXT, detail TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`);
   await q(`ALTER TABLE users  DROP CONSTRAINT IF EXISTS users_role_check`);
   await q(`ALTER TABLE users  ADD CONSTRAINT users_role_check CHECK (role IN ('admin','superuser','staff','driver'))`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS favorite_route_id INT REFERENCES routes(id) ON DELETE SET NULL`);
@@ -133,6 +138,9 @@ async function seed() {
       [name, email, username, hash]);
     console.log(`[seed] created admin user "${username}"`);
   }
+
+  const hs = await q(`SELECT 1 FROM settings WHERE key='hotels'`);
+  if (!hs.rows[0]) await q(`INSERT INTO settings (key,value) VALUES ('hotels','CND,AST,PSV,SRG,CNT,IRO') ON CONFLICT (key) DO NOTHING`);
 
   const r = await q('SELECT COUNT(*)::int AS n FROM routes');
   if (r.rows[0].n === 0) {

@@ -11,6 +11,8 @@ const mailer = require('./mailer');
 const scheduler = require('./scheduler');
 const pdf = require('./pdf');
 const brand = require('./brand');
+const multer = require('multer');
+const avatarUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 3 * 1024 * 1024 } });
 const { requireLogin, requireRole, homeForRole } = require('./auth');
 const { tomorrowStr, prettyDate, todayStr, mondayOf, weekDays, DAYNAMES } = require('./util');
 
@@ -66,6 +68,22 @@ app.get('/brand/:name', async (req, res) => {
   return res.sendFile(path.join(__dirname, '..', 'public', fb));
 });
 app.get('/favicon.ico', (req, res) => res.redirect('/brand/favicon'));
+app.get('/avatar/:id', async (req, res) => {
+  try {
+    const a = await brand.getAsset('avatar-' + parseInt(req.params.id, 10));
+    if (a) { res.setHeader('Content-Type', a.mime); res.setHeader('Cache-Control', 'no-cache'); return res.send(Buffer.from(a.data, 'base64')); }
+  } catch (e) {}
+  res.sendFile(path.join(__dirname, '..', 'public', 'avatar.svg'));
+});
+app.post('/profile/photo', requireLogin, avatarUpload.single('photo'), async (req, res) => {
+  try {
+    if (req.file && /^image\//.test(req.file.mimetype)) {
+      await brand.setAsset('avatar-' + req.session.user.id, req.file.mimetype, req.file.buffer);
+      await data.logActivity(req.session.user.id, 'Αλλαγή φωτογραφίας', null);
+    }
+  } catch (e) { console.error('[avatar] upload failed', e.message); }
+  res.redirect('/profile?saved=1');
+});
 
 // ---------- Auth ----------
 app.get('/', (req, res) => {
@@ -88,6 +106,7 @@ app.post('/login', async (req, res) => {
       return res.status(403).render('login', { error: 'Ο λογαριασμός σου αναμένει έγκριση από τη διοίκηση.', info: null });
     }
     req.session.user = { id: u.id, name: u.name, role: u.role, username: u.username };
+    try { await q('UPDATE users SET last_login_at=now() WHERE id=$1', [u.id]); await data.logActivity(u.id, 'Σύνδεση', null); } catch (e) {}
     res.redirect(homeForRole(u.role));
   } catch (e) {
     console.error(e);
@@ -151,6 +170,7 @@ app.post('/profile', requireLogin, async (req, res) => {
     await q('DELETE FROM driver_routes WHERE driver_id=$1', [req.session.user.id]);
     for (const rid of ids) await q('INSERT INTO driver_routes (driver_id,route_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [req.session.user.id, rid]);
   }
+  try { await data.logActivity(req.session.user.id, 'Ενημέρωση προφίλ', null); } catch (e) {}
   res.redirect('/profile?saved=1');
 });
 
@@ -218,6 +238,7 @@ app.post('/staff', requireRole('staff'), async (req, res) => {
              DO UPDATE SET status=EXCLUDED.status, route_id=EXCLUDED.route_id,
                            stop_id=EXCLUDED.stop_id, updated_at=now()`,
       [req.session.user.id, work_date, status, route_id, stop_id]);
+    await data.logActivity(req.session.user.id, 'Δήλωση βάρδιας', work_date + ' · ' + (status === 'off' ? 'Ρεπό' : 'Εργασία' + (route_id ? ' (δρομ. ' + route_id + ')' : '')));
     res.redirect('/staff?date=' + encodeURIComponent(work_date) + '&saved=1');
   } catch (e) {
     console.error(e);

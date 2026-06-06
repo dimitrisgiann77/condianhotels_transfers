@@ -31,11 +31,7 @@
 
       <form method="post" action="/staff" id="declForm">
         <input type="hidden" name="work_date" value="<%= workDate %>" />
-        <label>Εργάζεσαι;</label>
-        <div class="seg">
-          <label class="opt"><input type="radio" name="status" value="work" <%= (mine && mine.status==='work')||!mine ? 'checked':'' %> onchange="toggleWork()"> Εργασία</label>
-          <label class="opt"><input type="radio" name="status" value="off" <%= mine && mine.status==='off' ? 'checked':'' %> onchange="toggleWork()"> Ρεπό</label>
-        </div>
+        <input type="hidden" name="status" value="work" />
         <div id="workFields">
           <label>Δρομολόγιο</label>
           <select name="route_id" id="routeSel" onchange="fillStops()">
@@ -53,28 +49,7 @@
       </form>
     </div>
 
-    <div class="card">
-      <h2>Δήλωση για πολλές ημέρες</h2>
-      <form method="post" action="/staff/range" id="rangeForm">
-        <div class="grid2">
-          <div><label>Από</label><input type="date" name="from" min="<%= minDate %>" required></div>
-          <div><label>Έως</label><input type="date" name="to" min="<%= minDate %>" required></div>
-        </div>
-        <label>Κατάσταση</label>
-        <div class="seg">
-          <label class="opt"><input type="radio" name="status" value="work" checked onchange="toggleWorkR()"> Εργασία</label>
-          <label class="opt"><input type="radio" name="status" value="off" onchange="toggleWorkR()"> Ρεπό</label>
-        </div>
-        <div id="workFieldsR">
-          <label>Δρομολόγιο</label>
-          <select name="route_id" id="routeSelR" onchange="fillStopsR()"><option value="">— Διάλεξε δρομολόγιο —</option><% routes.forEach(function(r){ %><option value="<%= r.id %>"><%= r.name %></option><% }) %></select>
-          <label>Στάση παραλαβής</label>
-          <select name="stop_id" id="stopSelR"><option value="">— Διάλεξε στάση —</option></select>
-        </div>
-        <button class="btn primary">Υποβολή για όλες τις ημέρες</button>
-      </form>
-      <p class="muted small">Σε περίπτωση που ένα δρομολόγιο είναι γεμάτο, δεν μπορεί να γίνει κράτηση.</p>
-    </div>
+
   </div>
 
   <!-- ΟΙ ΔΗΛΩΣΕΙΣ ΜΟΥ -->
@@ -116,11 +91,7 @@
       showTime();showSeats();
     }
     function showTime(){const sel=document.getElementById('stopSel');const t=sel.options[sel.selectedIndex]&&sel.options[sel.selectedIndex].dataset.time;document.getElementById('timeOut').textContent=t||'—';}
-    function toggleWork(){const off=document.querySelector('#declForm input[name=status][value=off]').checked;document.getElementById('workFields').style.display=off?'none':'block';}
-    function toggleWorkR(){var f=document.getElementById('rangeForm');var off=f.querySelector('input[value=off]').checked;document.getElementById('workFieldsR').style.display=off?'none':'block';}
-    function fillStopsR(){var rid=document.getElementById('routeSelR').value;var sel=document.getElementById('stopSelR');sel.innerHTML='<option value="">— Διάλεξε στάση —</option>';var r=ROUTES.find(function(x){return String(x.id)===String(rid);});if(r)r.stops.forEach(function(s){var o=document.createElement('option');o.value=s.id;o.textContent=s.name+(s.pickup_time?' — '+s.pickup_time:'');sel.appendChild(o);});}
     (function init(){
-      toggleWork(); toggleWorkR();
       if (MINE && MINE.route_id) { document.getElementById('routeSel').value=MINE.route_id; fillStops(MINE.stop_id); }
       else if (FAVORITE) { document.getElementById('routeSel').value=FAVORITE; fillStops(FAVORITE_STOP); }
       var tabs=document.querySelectorAll('#staffTabs button');var secs=document.querySelectorAll('.tab');

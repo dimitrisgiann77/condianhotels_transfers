@@ -24,7 +24,8 @@ async function init() {
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    sort_order INT NOT NULL DEFAULT 0
+    sort_order INT NOT NULL DEFAULT 0,
+    capacity INT NOT NULL DEFAULT 8
   )`);
 
   await q(`CREATE TABLE IF NOT EXISTS stops (
@@ -73,10 +74,13 @@ async function init() {
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS notify_time TEXT`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS hotel TEXT`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS supervisor_id INT REFERENCES users(id) ON DELETE SET NULL`);
+  await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS notify_weekly_enabled BOOLEAN NOT NULL DEFAULT FALSE`);
+  await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS notify_weekly_day INT`);
+  await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS notify_weekly_time TEXT`);
   await q(`ALTER TABLE users  DROP CONSTRAINT IF EXISTS users_role_check`);
   await q(`ALTER TABLE users  ADD CONSTRAINT users_role_check CHECK (role IN ('admin','superuser','staff','driver'))`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS favorite_route_id INT REFERENCES routes(id) ON DELETE SET NULL`);
-  await q(`ALTER TABLE routes ADD COLUMN IF NOT EXISTS capacity INT NOT NULL DEFAULT 9`);
+  await q(`ALTER TABLE routes ADD COLUMN IF NOT EXISTS capacity INT NOT NULL DEFAULT 8`);
 
   await q(`CREATE TABLE IF NOT EXISTS questions (
     id SERIAL PRIMARY KEY,
@@ -99,6 +103,15 @@ async function init() {
     comment TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
+
+  // one-time: set all route capacities to 8
+  try {
+    const done = await q(`SELECT value FROM settings WHERE key='cap8_applied'`);
+    if (!done.rows[0]) {
+      await q('UPDATE routes SET capacity=8');
+      await q(`INSERT INTO settings (key,value) VALUES ('cap8_applied','1') ON CONFLICT (key) DO NOTHING`);
+    }
+  } catch (e) { console.error('[db] cap8 migration', e.message); }
 
   await seed();
 }

@@ -38,11 +38,11 @@ router.get('/', async (req, res) => {
 router.post('/route', async (req, res) => {
   const { name, sort_order, capacity } = req.body;
   await q('INSERT INTO routes (name, sort_order, capacity) VALUES ($1,$2,$3)',
-    [name, parseInt(sort_order || '0', 10), parseInt(capacity || '9', 10)]);
+    [name, parseInt(sort_order || '0', 10), parseInt(capacity || '8', 10)]);
   res.redirect('/admin?msg=' + encodeURIComponent('Το δρομολόγιο προστέθηκε'));
 });
 router.post('/route/:id/capacity', async (req, res) => {
-  await q('UPDATE routes SET capacity=$1 WHERE id=$2', [parseInt(req.body.capacity || '9', 10), req.params.id]);
+  await q('UPDATE routes SET capacity=$1 WHERE id=$2', [parseInt(req.body.capacity || '8', 10), req.params.id]);
   res.redirect('/admin?msg=' + encodeURIComponent('Το όριο θέσεων ενημερώθηκε'));
 });
 router.post('/route/:id/rename', async (req, res) => {
@@ -106,6 +106,9 @@ function fullName(last, first) {
 }
 router.post('/user', adminOnly, async (req, res) => {
   const { last_name, first_name, email, username, password, role, hotel, supervisor_id } = req.body;
+  if (!(email||'').trim() || !(req.body.phone||'').trim()) {
+    return res.redirect('/admin?tab=users&msg=' + encodeURIComponent('Email και κινητό είναι υποχρεωτικά'));
+  }
   try {
     const hash = await bcrypt.hash(password, 10);
     await q(`INSERT INTO users (name,last_name,first_name,email,phone,username,password_hash,role,hotel,supervisor_id)
@@ -125,7 +128,7 @@ router.post('/user/bulk', adminOnly, async (req, res) => {
   let added = 0, skipped = 0;
   for (let i = 0; i < un.length; i++) {
     const u = (un[i] || '').trim(), p = (pw[i] || '').trim();
-    if (!u || !p) { if ((last[i] || first[i] || email[i])) skipped++; continue; }
+    if (!u || !p || !(email[i]||'').trim() || !(phone[i]||'').trim()) { if ((last[i] || first[i] || email[i] || un[i])) skipped++; continue; }
     try {
       const hash = await bcrypt.hash(p, 10);
       await q(`INSERT INTO users (name,last_name,first_name,email,phone,username,password_hash,role)
@@ -195,9 +198,9 @@ router.post('/branding/pdf', adminOnly, async (req, res) => {
   await brand.setPdf(req.body);
   res.redirect('/admin?msg=' + encodeURIComponent('Οι ρυθμίσεις PDF ενημερώθηκαν'));
 });
-const LOGO_MAP = { logo: 'logo', logo_white: 'logo-white', favicon: 'favicon' };
+const LOGO_MAP = { logo: 'logo', logo_white: 'logo-white', favicon: 'favicon', share: 'share' };
 router.post('/branding/logos', adminOnly,
-  upload.fields([{ name: 'logo' }, { name: 'logo_white' }, { name: 'favicon' }]),
+  upload.fields([{ name: 'logo' }, { name: 'logo_white' }, { name: 'favicon' }, { name: 'share' }]),
   async (req, res) => {
     try {
       for (const field of Object.keys(LOGO_MAP)) {
@@ -230,6 +233,9 @@ router.post('/registration-code', adminOnly, async (req, res) => {
 
 router.post('/user/:id/edit', adminOnly, async (req, res) => {
   const b = req.body;
+  if (!(b.email||'').trim() || !(b.phone||'').trim()) {
+    return res.redirect('/admin?user='+req.params.id+'&tab=users&msg=' + encodeURIComponent('Email και κινητό είναι υποχρεωτικά'));
+  }
   await q(`UPDATE users SET name=$1,last_name=$2,first_name=$3,email=$4,phone=$5,role=$6,hotel=$7,supervisor_id=$8 WHERE id=$9`,
     [fullName(b.last_name, b.first_name), b.last_name || null, b.first_name || null,
      b.email || null, b.phone || null, b.role || 'staff', b.hotel || null,

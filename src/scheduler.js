@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const mailer = require('./mailer');
 const data = require('./data');
-const { TZ, tomorrowStr } = require('./util');
+const { TZ, tomorrowStr, todayStr } = require('./util');
 
 function nowHHMM() {
   return new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
@@ -21,6 +21,13 @@ async function tick() {
       try { await mailer.sendDriverSummaryTo(d, date); }
       catch (e) { console.error('[scheduler] driver summary', d.email, e.message); }
     }
+    const dow = new Date(todayStr() + 'T00:00:00Z').getUTCDay();
+    const weekly = await data.getDriversWeeklyDue(dow, hhmm);
+    for (const d of weekly) {
+      try { await mailer.sendDriverWeeklyTo(d); }
+      catch (e) { console.error('[scheduler] driver weekly', d.email, e.message); }
+    }
+    if (weekly.length) console.log(`[scheduler] ${hhmm} weekly: ${weekly.length}`);
     if (staff.length || drivers.length) {
       console.log(`[scheduler] ${hhmm} dispatched: staff=${staff.length}, drivers=${drivers.length}`);
     }

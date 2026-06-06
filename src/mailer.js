@@ -150,6 +150,22 @@ async function sendDriverSummaryTo(drv, workDate = tomorrowStr()) {
   return { sent: true };
 }
 
+async function sendDriverWeeklyTo(drv, startDate = tomorrowStr()) {
+  if (!drv.email) return { skipped: true };
+  const routeIds = await data.getDriverRouteIds(drv.id);
+  const week = await data.getWeekPickups(routeIds.length ? routeIds : null, startDate, 7);
+  let body = '<p>Πρόγραμμα παραλαβών για τις επόμενες 7 ημέρες:</p>';
+  for (const day of week) {
+    const rows = day.pickups.length
+      ? day.pickups.map(p => `<tr><td style="padding:3px 8px;border:1px solid #ddd">${esc(p.pickup_time || '')}</td><td style="padding:3px 8px;border:1px solid #ddd">${esc(p.stop || '')}</td><td style="padding:3px 8px;border:1px solid #ddd">${esc(p.person)}</td></tr>`).join('')
+      : '<tr><td colspan="3" style="padding:6px;color:#888">Καμία δήλωση.</td></tr>';
+    body += `<h4 style="color:#193847;margin:14px 0 4px">${prettyDate(day.date)}</h4>` +
+      `<table style="border-collapse:collapse;width:100%;font-size:13px"><tr style="background:#193847;color:#fff"><th style="padding:4px 8px;text-align:left">Ώρα</th><th style="padding:4px 8px;text-align:left">Στάση</th><th style="padding:4px 8px;text-align:left">Όνομα</th></tr>${rows}</table>`;
+  }
+  await send(drv.email, 'Εβδομαδιαίο πρόγραμμα παραλαβών', wrap('Εβδομαδιαίο πρόγραμμα', body));
+  return { sent: true };
+}
+
 // --- bulk (manual buttons) ---
 async function sendStaffReminders(workDate = tomorrowStr()) {
   const pending = await data.getPendingStaff(workDate);
@@ -173,4 +189,4 @@ async function sendDriverSummaries(workDate = tomorrowStr()) {
   return { drivers: drivers.length, sent };
 }
 
-module.exports = { send, sendTest, sendStaffReminders, sendDriverSummaries, sendStaffReminderTo, sendDriverSummaryTo };
+module.exports = { send, sendTest, sendStaffReminders, sendDriverSummaries, sendStaffReminderTo, sendDriverSummaryTo, sendDriverWeeklyTo };

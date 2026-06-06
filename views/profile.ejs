@@ -5,9 +5,9 @@
     <p class="muted small">Ονοματεπώνυμο: <b><%= me.name %></b> · Ρόλος: <%= me.role %> · Username: <%= me.username %></p>
     <form method="post" action="/profile">
       <label>Email επικοινωνίας</label>
-      <input type="email" name="email" value="<%= me.email || '' %>" placeholder="name@condian.gr" />
+      <input type="email" name="email" value="<%= me.email || '' %>" placeholder="name@condian.gr" required />
       <label>Κινητό επικοινωνίας</label>
-      <input name="phone" value="<%= me.phone || '' %>" placeholder="69xxxxxxxx" />
+      <input name="phone" value="<%= me.phone || '' %>" placeholder="69xxxxxxxx" required />
       <% if (me.role === 'driver') { %>
         <label>Τα δρομολόγιά μου</label>
         <div class="checks">
@@ -15,7 +15,7 @@
             <label class="chk"><input type="checkbox" name="route_ids" value="<%= r.id %>" <%= (myRouteIds||[]).includes(r.id) ? 'checked':'' %>> <%= r.name %></label>
           <% }) %>
         </div>
-        <p class="muted small">Διάλεξε ποια δρομολόγια καλύπτεις — θα λαμβάνεις το πρόγραμμά τους στις 23:00.</p>
+        <p class="muted small">Διάλεξε ποια δρομολόγια καλύπτεις.</p>
       <% } else if (me.role === 'staff') { %>
         <label>Αγαπημένο δρομολόγιο (προεπιλογή στη δήλωση)</label>
         <select name="favorite_route_id">
@@ -27,9 +27,25 @@
       <% if (me.role === 'staff' || me.role === 'driver') { %>
         <h3 style="margin-top:14px">Ειδοποιήσεις</h3>
         <label class="opt"><input type="checkbox" name="notify_enabled" value="1" <%= me.notify_enabled ? 'checked':'' %>> Να λαμβάνω ειδοποιήσεις με email</label>
-        <label>Ώρα ειδοποίησης</label>
-        <input type="time" name="notify_time" value="<%= me.notify_time || (me.role==='driver'?'23:00':'18:00') %>" style="width:auto">
-        <p class="muted small"><% if (me.role==='driver') { %>Η ώρα που θα λαμβάνεις το πρόγραμμα παραλαβών σου.<% } else { %>Η ώρα υπενθύμισης για να δηλώσεις τη βάρδιά σου (αν δεν την έχεις δηλώσει ήδη).<% } %></p>
+        <label>Ώρες ειδοποίησης (μπορείς να βάλεις πολλές)</label>
+        <div id="notifyTimes">
+          <% var times=(me.notify_time || (me.role==='driver'?'23:00':'18:00')).split(',').map(function(x){return x.trim();}).filter(Boolean); times.forEach(function(t){ %>
+            <div class="ntrow"><input type="time" name="notify_time" value="<%= t %>"> <button type="button" class="iconbtn danger" title="Αφαίρεση" onclick="this.parentNode.remove()">✕</button></div>
+          <% }) %>
+        </div>
+        <button type="button" class="btn" onclick="addNotifyTime()">+ Προσθήκη ώρας</button>
+        <template id="ntTpl"><div class="ntrow"><input type="time" name="notify_time" value="08:00"> <button type="button" class="iconbtn danger" title="Αφαίρεση" onclick="this.parentNode.remove()">✕</button></div></template>
+        <script>function addNotifyTime(){var t=document.getElementById('ntTpl');document.getElementById('notifyTimes').appendChild(t.content.cloneNode(true));}</script>
+        <p class="muted small"><% if (me.role==='driver') { %>Ώρες που θα λαμβάνεις το πρόγραμμα παραλαβών.<% } else { %>Ώρες υπενθύμισης για να δηλώσεις τη βάρδιά σου.<% } %></p>
+
+        <% if (me.role==='driver') { %>
+          <h3 style="margin-top:10px">Εβδομαδιαία υπενθύμιση</h3>
+          <label class="opt"><input type="checkbox" name="notify_weekly_enabled" value="1" <%= me.notify_weekly_enabled ? 'checked':'' %>> Στείλε μου εβδομαδιαίο πρόγραμμα (7 ημερών)</label>
+          <div class="grid2">
+            <div><label>Ημέρα</label><select name="notify_weekly_day"><% var days=['Κυριακή','Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο']; days.forEach(function(dn,di){ %><option value="<%= di %>" <%= (me.notify_weekly_day===di)?'selected':'' %>><%= dn %></option><% }) %></select></div>
+            <div><label>Ώρα</label><input type="time" name="notify_weekly_time" value="<%= me.notify_weekly_time || '20:00' %>"></div>
+          </div>
+        <% } %>
       <% } %>
       <button class="btn primary">Αποθήκευση</button>
     </form>

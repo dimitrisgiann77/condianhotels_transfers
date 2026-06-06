@@ -2,6 +2,7 @@
   <div class="card">
     <h1>Δήλωση βάρδιας</h1>
     <% if (saved) { %><div class="alert ok">Η δήλωσή σου αποθηκεύτηκε.</div><% } %>
+    <% if (typeof msg !== "undefined" && msg) { %><div class="alert ok"><%= msg %></div><% } %>
     <% if (error === 'full') { %><div class="alert err">Το δρομολόγιο είναι πλήρες (όριο θέσεων). Διάλεξε άλλο δρομολόγιο.</div><% } %>
     <form method="get" action="/staff" class="row">
       <label>Ημερομηνία</label>
@@ -56,6 +57,29 @@
     <% } %>
   </div>
 
+  <div class="card">
+    <h2>Δήλωση για πολλές ημέρες</h2>
+    <form method="post" action="/staff/range" id="rangeForm">
+      <div class="grid2">
+        <div><label>Από</label><input type="date" name="from" min="<%= minDate %>" required></div>
+        <div><label>Έως</label><input type="date" name="to" min="<%= minDate %>" required></div>
+      </div>
+      <label>Κατάσταση</label>
+      <div class="seg">
+        <label class="opt"><input type="radio" name="status" value="work" checked onchange="toggleWorkR()"> Εργασία</label>
+        <label class="opt"><input type="radio" name="status" value="off" onchange="toggleWorkR()"> Ρεπό</label>
+      </div>
+      <div id="workFieldsR">
+        <label>Δρομολόγιο</label>
+        <select name="route_id" id="routeSelR" onchange="fillStopsR()"><option value="">— Διάλεξε δρομολόγιο —</option><% routes.forEach(function(r){ %><option value="<%= r.id %>"><%= r.name %></option><% }) %></select>
+        <label>Στάση παραλαβής</label>
+        <select name="stop_id" id="stopSelR"><option value="">— Διάλεξε στάση —</option></select>
+      </div>
+      <button class="btn primary">Υποβολή για όλες τις ημέρες</button>
+    </form>
+    <p class="muted small">Εφαρμόζεται σε κάθε ημέρα του εύρους. Ημέρες με πλήρες δρομολόγιο παραλείπονται.</p>
+  </div>
+
   <script>
     const ROUTES = <%- JSON.stringify(routes) %>;
     const MINE = <%- JSON.stringify(mine || null) %>;
@@ -99,5 +123,10 @@
       toggleWork();
       if (MINE && MINE.route_id) { document.getElementById('routeSel').value = MINE.route_id; fillStops(MINE.stop_id); }
     })();
+  </script>
+  <script>
+    function toggleWorkR(){var f=document.getElementById('rangeForm');if(!f)return;var off=f.querySelector('input[value=off]').checked;document.getElementById('workFieldsR').style.display=off?'none':'block';}
+    function fillStopsR(){var rid=document.getElementById('routeSelR').value;var sel=document.getElementById('stopSelR');sel.innerHTML='<option value="">— Διάλεξε στάση —</option>';var r=ROUTES.find(function(x){return String(x.id)===String(rid);});if(r)r.stops.forEach(function(s){var o=document.createElement('option');o.value=s.id;o.textContent=s.name+(s.pickup_time?' — '+s.pickup_time:'');sel.appendChild(o);});}
+    toggleWorkR();
   </script>
 <%- include('partials/footer') %>

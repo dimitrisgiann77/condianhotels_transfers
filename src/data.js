@@ -80,6 +80,20 @@ async function getDrivers() {
   return rows;
 }
 
+async function getWeekPickups(routeIds, startDate, days) {
+  const { datePlus } = require('./util');
+  // startDate is YYYY-MM-DD; compute consecutive days
+  const out = [];
+  const base = new Date(startDate + 'T00:00:00Z');
+  for (let i = 0; i < days; i++) {
+    const d = new Date(base.getTime() + i * 86400000);
+    const ds = d.toISOString().slice(0, 10);
+    const pk = await getPickups(ds, routeIds && routeIds.length ? routeIds : null);
+    out.push({ date: ds, pickups: pk });
+  }
+  return out;
+}
+
 // ---- Capacity ----
 async function getRouteUsage(workDate) {
   const { rows } = await q(
@@ -115,22 +129,33 @@ async function getPendingUsers() {
 
 // ---- Profile ----
 async function getUser(id) {
-  const { rows } = await q('SELECT id,name,email,phone,username,role,favorite_route_id,notify_enabled,notify_time,hotel,supervisor_id FROM users WHERE id=$1', [id]);
+  const { rows } = await q('SELECT id,name,email,phone,username,role,favorite_route_id,notify_enabled,notify_time,hotel,supervisor_id,notify_weekly_enabled,notify_weekly_day,notify_weekly_time FROM users WHERE id=$1', [id]);
   return rows[0] || null;
 }
-async function updateProfile(id, { email, phone, favorite_route_id, notify_enabled, notify_time }) {
-  await q('UPDATE users SET email=$1, phone=$2, favorite_route_id=$3, notify_enabled=$4, notify_time=$5 WHERE id=$6',
-    [email || null, phone || null, favorite_route_id || null,
-     notify_enabled === undefined ? true : !!notify_enabled, notify_time || null, id]);
+async function updateProfile(id, p) {
+  await q(`UPDATE users SET email=$1, phone=$2, favorite_route_id=$3, notify_enabled=$4, notify_time=$5,
+           notify_weekly_enabled=$6, notify_weekly_day=$7, notify_weekly_time=$8 WHERE id=$9`,
+    [p.email || null, p.phone || null, p.favorite_route_id || null,
+     p.notify_enabled === undefined ? true : !!p.notify_enabled, p.notify_time || null,
+     !!p.notify_weekly_enabled, (p.notify_weekly_day===''||p.notify_weekly_day==null)?null:parseInt(p.notify_weekly_day,10),
+     p.notify_weekly_time || null, id]);
 }
 async function getStaffDue(hhmm) {
   const { rows } = await q(`SELECT id,name,email FROM users
-    WHERE role='staff' AND active=TRUE AND notify_enabled=TRUE AND COALESCE(notify_time,'18:00')=$1`, [hhmm]);
+    WHERE role='staff' AND active=TRUE AND notify_enabled=TRUE
+      AND (',' || (CASE WHEN notify_time IS NULL OR notify_time='' THEN '18:00' ELSE notify_time END) || ',') LIKE ('%,' || $1 || ',%')`, [hhmm]);
   return rows;
 }
 async function getDriversDue(hhmm) {
   const { rows } = await q(`SELECT id,name,email FROM users
-    WHERE role='driver' AND active=TRUE AND notify_enabled=TRUE AND COALESCE(notify_time,'23:00')=$1`, [hhmm]);
+    WHERE role='driver' AND active=TRUE AND notify_enabled=TRUE
+      AND (',' || (CASE WHEN notify_time IS NULL OR notify_time='' THEN '23:00' ELSE notify_time END) || ',') LIKE ('%,' || $1 || ',%')`, [hhmm]);
+  return rows;
+}
+async function getDriversWeeklyDue(dow, hhmm) {
+  const { rows } = await q(`SELECT id,name,email FROM users
+    WHERE role='driver' AND active=TRUE AND notify_weekly_enabled=TRUE
+      AND notify_weekly_day=$1 AND notify_weekly_time=$2`, [dow, hhmm]);
   return rows;
 }
 
@@ -216,6 +241,6 @@ module.exports = {
   getPickups, getPendingStaff, getCounts, getMyDeclaration, getDrivers,
   getRouteUsage, countOnRoute, getUser, updateProfile, getMyDeclarations,
   getSetting, setSetting, getPendingUsers, getStaffDue, getDriversDue,
-  getSupervisors, getUsersAdmin, getHotels,
+  getSupervisors, getUsersAdmin, getHotels, getDriversWeeklyDue, getWeekPickups,
   routeStats, staffStats, ratingAverages, ratingByDriver, recentRatings, listQuestions,
 };

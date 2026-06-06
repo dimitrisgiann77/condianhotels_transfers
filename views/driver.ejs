@@ -27,32 +27,44 @@
     <% if (pickups.length === 0) { %>
       <p class="muted">Καμία δήλωση εργασίας ακόμη.</p>
     <% } else {
-         let lastKey = null; %>
-      <table class="tbl">
-        <thead><tr><th>Δρομολόγιο</th><th>Στάση</th><th>Ώρα</th><th>Όνομα</th></tr></thead>
-        <tbody>
-        <% pickups.forEach(function(p){ %>
-          <tr>
-            <td><%= p.route || '' %></td>
-            <td><%= p.stop || '' %></td>
-            <td><%= p.pickup_time || '' %></td>
-            <td><%= p.person %></td>
-          </tr>
-        <% }) %>
-        </tbody>
-      </table>
-    <% } %>
+      const routesMap = {};
+      pickups.forEach(function(p){
+        const rk = p.route || '—';
+        (routesMap[rk] = routesMap[rk] || []).push(p);
+      });
+      Object.keys(routesMap).forEach(function(routeName){
+        const items = routesMap[routeName];
+        const stops = {};
+        items.forEach(function(p){
+          const sk = (p.stop||'') + '|' + (p.pickup_time||'');
+          (stops[sk] = stops[sk] || { stop: p.stop, time: p.pickup_time, people: [] }).people.push(p.person);
+        });
+    %>
+      <div class="routehdr"><span><%= routeName %></span><span class="ln"></span></div>
+      <% Object.keys(stops).forEach(function(sk){ var g = stops[sk]; %>
+        <div class="stopcard">
+          <div class="stopcard-head">
+            <span class="stopcard-name">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.3-7-11a7 7 0 1 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              <%= g.stop || '—' %>
+            </span>
+            <span class="pill"><%= g.time || '' %></span>
+          </div>
+          <% g.people.forEach(function(n){ %><div class="person"><span class="dot"></span><%= n %></div><% }) %>
+        </div>
+      <% }) %>
+    <% }) } %>
   </div>
 
   <div class="card">
-    <h2 class="warn">Δεν δήλωσαν ακόμη (<%= pending.length %>)</h2>
-    <% if (pending.length === 0) { %>
-      <p class="ok">Όλο το προσωπικό έχει δηλώσει.</p>
-    <% } else { %>
-      <ul class="pending">
-        <% pending.forEach(function(p){ %><li><%= p.name %></li><% }) %>
-      </ul>
-    <% } %>
+    <div class="pendingbox">
+      <h2>Δεν δήλωσαν ακόμη (<%= pending.length %>)</h2>
+      <% if (pending.length === 0) { %>
+        <p class="ok" style="margin:0">Όλο το προσωπικό έχει δηλώσει.</p>
+      <% } else { %>
+        <% pending.forEach(function(p){ %><div class="person"><span class="dot"></span><%= p.name %></div><% }) %>
+      <% } %>
+    </div>
   </div>
 
   <script>window.PICKUPS = <%- JSON.stringify(pickups) %>;</script>

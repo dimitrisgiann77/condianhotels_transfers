@@ -64,6 +64,16 @@ async function getMyDeclaration(userId, workDate) {
   const { rows } = await q(`SELECT * FROM declarations WHERE user_id=$1 AND work_date=$2`, [userId, workDate]);
   return rows[0] || null;
 }
+async function getMyDeclarations(userId) {
+  const { rows } = await q(`
+    SELECT d.work_date, d.status, r.name AS route, s.name AS stop, s.pickup_time
+    FROM declarations d
+    LEFT JOIN routes r ON r.id=d.route_id
+    LEFT JOIN stops  s ON s.id=d.stop_id
+    WHERE d.user_id=$1 AND d.work_date >= CURRENT_DATE
+    ORDER BY d.work_date LIMIT 30`, [userId]);
+  return rows;
+}
 async function getDrivers() {
   const { rows } = await q(`SELECT * FROM users WHERE role='driver' AND active=TRUE ORDER BY name`);
   return rows;
@@ -174,7 +184,7 @@ async function listQuestions() {
 module.exports = {
   getRoutes, getStops, getAllStops, getRoutesWithStops, getDriverRouteIds,
   getPickups, getPendingStaff, getCounts, getMyDeclaration, getDrivers,
-  getRouteUsage, countOnRoute, getUser, updateProfile,
+  getRouteUsage, countOnRoute, getUser, updateProfile, getMyDeclarations,
   getSetting, setSetting, getPendingUsers,
   routeStats, staffStats, ratingAverages, ratingByDriver, recentRatings, listQuestions,
 };

@@ -39,6 +39,23 @@
     </form>
   </div>
 
+  <div class="card">
+    <h2>Οι δηλώσεις μου</h2>
+    <% if (!myDeclarations || myDeclarations.length === 0) { %>
+      <p class="muted">Δεν έχεις δηλώσεις για τις επόμενες μέρες.</p>
+    <% } else { %>
+      <% myDeclarations.forEach(function(d){ var ds = String(d.work_date).slice(0,10); %>
+        <div class="decl">
+          <div>
+            <div class="d-date"><%= prettyDate(ds) %></div>
+            <div class="d-meta"><% if (d.status==='work') { %><%= d.route || '' %><%= d.stop ? ' · ' + d.stop : '' %><%= d.pickup_time ? ' · ' + d.pickup_time : '' %><% } else { %>Ρεπό<% } %></div>
+          </div>
+          <span class="badge <%= d.status==='work'?'work':'off' %>"><%= d.status==='work'?'Εργασία':'Ρεπό' %></span>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+
   <script>
     const ROUTES = <%- JSON.stringify(routes) %>;
     const MINE = <%- JSON.stringify(mine || null) %>;

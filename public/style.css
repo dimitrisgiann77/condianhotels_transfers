@@ -67,3 +67,21 @@ input[readonly]{background:#f3f3f3}
 .chk{display:flex;align-items:center;gap:6px;font-size:13px;width:auto}
 .chk input{width:auto}
 .foot{text-align:center;color:#9aa;font-size:12px;padding:18px}
+
+/* --- card-based UI --- */
+.routehdr{display:flex;align-items:center;gap:8px;margin:14px 0 8px;font-size:15px;font-weight:bold;color:var(--accent)}
+.routehdr .ln{flex:1;height:2px;background:var(--accent);opacity:.4}
+.stopcard{border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;background:var(--card-bg)}
+.stopcard-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.stopcard-name{font-weight:bold;display:flex;align-items:center;gap:6px}
+.pill{font-size:13px;background:#eef3f6;color:var(--navy);padding:3px 12px;border-radius:20px;white-space:nowrap}
+.person{font-size:14px;color:var(--text);padding:2px 0;display:flex;align-items:center;gap:8px}
+.person .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
+.pendingbox{border:1px solid #f0e0b8;background:#fff8ec;border-radius:var(--radius);padding:12px}
+.pendingbox h2{color:var(--accent);margin:0 0 6px;font-size:15px}
+.ico{width:16px;height:16px;flex:none;color:var(--accent)}
+.decl{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:var(--radius);padding:8px 12px;margin-bottom:8px}
+.decl .d-date{font-weight:bold}
+.decl .d-meta{font-size:13px;color:var(--text);opacity:.85}
+.badge.work{background:#e7f6ec;color:#1d8a4c}
+.badge.off{background:#eee;color:#666}

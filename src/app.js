@@ -157,8 +157,9 @@ app.get('/staff', requireRole('staff'), async (req, res) => {
   const mine = await data.getMyDeclaration(req.session.user.id, workDate);
   const usage = await data.getRouteUsage(workDate);
   const me = await data.getUser(req.session.user.id);
+  const myDeclarations = await data.getMyDeclarations(req.session.user.id);
   res.render('staff', { routes, workDate, mine, usage, favorite: me.favorite_route_id,
-    saved: req.query.saved === '1', error: req.query.error || null, minDate: todayStr() });
+    saved: req.query.saved === '1', error: req.query.error || null, minDate: todayStr(), myDeclarations });
 });
 app.post('/staff', requireRole('staff'), async (req, res) => {
   const { work_date, status } = req.body;

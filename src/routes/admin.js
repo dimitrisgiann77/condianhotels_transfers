@@ -39,9 +39,9 @@ router.get('/', async (req, res) => {
 // ----- Routes -----
 router.post('/route', async (req, res) => {
   const { name, sort_order, capacity } = req.body;
-  await q('INSERT INTO routes (name, sort_order, capacity) VALUES ($1,$2,$3)',
-    [name, parseInt(sort_order || '0', 10), parseInt(capacity || '8', 10)]);
-  res.redirect('/admin?msg=' + encodeURIComponent('Το δρομολόγιο προστέθηκε'));
+  await q('INSERT INTO routes (name, destination, sort_order, capacity) VALUES ($1,$2,$3,$4)',
+    [name, (req.body.destination || '').trim() || null, parseInt(sort_order || '0', 10), parseInt(capacity || '8', 10)]);
+  res.redirect('/admin?tab=routes&msg=' + encodeURIComponent('Το δρομολόγιο προστέθηκε'));
 });
 router.post('/route/:id/capacity', async (req, res) => {
   await q('UPDATE routes SET capacity=$1 WHERE id=$2', [parseInt(req.body.capacity || '8', 10), req.params.id]);
@@ -49,8 +49,18 @@ router.post('/route/:id/capacity', async (req, res) => {
 });
 router.post('/route/:id/rename', async (req, res) => {
   const name = (req.body.name || '').trim();
-  if (name) await q('UPDATE routes SET name=$1 WHERE id=$2', [name, req.params.id]);
-  res.redirect('/admin?msg=' + encodeURIComponent('Το δρομολόγιο μετονομάστηκε'));
+  const destination = (req.body.destination || '').trim() || null;
+  if (name) {
+    const before = (await q('SELECT name FROM routes WHERE id=$1', [req.params.id])).rows[0];
+    await q('UPDATE routes SET name=$1, destination=$2 WHERE id=$3', [name, destination, req.params.id]);
+    if (before && before.name !== name) {
+      try {
+        const ids = await data.getFutureDeclUserIds(req.params.id);
+        await data.notifyUsers(ids, 'route_change', 'Αλλαγή δρομολογίου', 'Το δρομολόγιο «' + before.name + '» άλλαξε σε «' + name + '».', '/staff?tab=mine');
+      } catch (e) {}
+    }
+  }
+  res.redirect('/admin?tab=routes&msg=' + encodeURIComponent('Το δρομολόγιο ενημερώθηκε'));
 });
 router.post('/routes/reorder', async (req, res) => {
   let ids = req.body.ids || [];
@@ -72,12 +82,24 @@ router.post('/stops/reorder', async (req, res) => {
   res.json({ ok: true });
 });
 router.post('/route/:id/delete', async (req, res) => {
-  await q('DELETE FROM routes WHERE id=$1', [req.params.id]);
-  res.redirect('/admin?msg=' + encodeURIComponent('Το δρομολόγιο διαγράφηκε'));
+  try {
+    const before = (await q('SELECT name FROM routes WHERE id=$1', [req.params.id])).rows[0];
+    const ids = await data.getFutureDeclUserIds(req.params.id);
+    await q('DELETE FROM routes WHERE id=$1', [req.params.id]);
+    if (before) await data.notifyUsers(ids, 'route_removed', 'Κατάργηση δρομολογίου', 'Το δρομολόγιο «' + before.name + '» αφαιρέθηκε. Παρακαλώ δήλωσε ξανά το pick up σου.', '/staff?tab=declare');
+  } catch (e) { await q('DELETE FROM routes WHERE id=$1', [req.params.id]); }
+  res.redirect('/admin?tab=routes&msg=' + encodeURIComponent('Το δρομολόγιο διαγράφηκε'));
 });
 router.post('/route/:id/toggle', async (req, res) => {
   await q('UPDATE routes SET active = NOT active WHERE id=$1', [req.params.id]);
-  res.redirect('/admin');
+  try {
+    const r = (await q('SELECT name, active FROM routes WHERE id=$1', [req.params.id])).rows[0];
+    if (r && !r.active) {
+      const ids = await data.getFutureDeclUserIds(req.params.id);
+      await data.notifyUsers(ids, 'route_off', 'Δρομολόγιο ανενεργό', 'Το δρομολόγιο «' + r.name + '» απενεργοποιήθηκε. Δήλωσε ξανά το pick up σου.', '/staff?tab=declare');
+    }
+  } catch (e) {}
+  res.redirect('/admin?tab=routes');
 });
 
 // ----- Stops -----

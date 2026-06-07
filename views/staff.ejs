@@ -24,7 +24,7 @@
       <h1><%= t('shift_declaration') %></h1>
       <form method="get" action="/staff" class="row">
         <input type="hidden" name="tab" value="declare" />
-        <label>Ημερομηνία</label>
+        <label><%= t('date') %></label>
         <input type="date" name="date" value="<%= workDate %>" min="<%= minDate %>" onchange="this.form.submit()" />
         <span class="muted"><%= prettyDate(workDate) %></span>
       </form>
@@ -33,23 +33,25 @@
         <input type="hidden" name="work_date" value="<%= workDate %>" />
         <input type="hidden" name="status" value="work" />
         <div id="workFields">
-          <label><%= t('route') %></label>
-          <select name="route_id" id="routeSel" onchange="fillStops()">
-            <option value=""><%= t('choose_route') %></option>
-            <% routes.forEach(function(r){ var used=(usage[r.id]||0); var mineHere=(mine&&mine.status==='work'&&mine.route_id===r.id); var rem=r.capacity-used+(mineHere?1:0); var full=rem<=0; %>
-              <option value="<%= r.id %>" <%= (mine && mine.route_id===r.id) || (!mine && favorite===r.id && !full) ? 'selected':'' %> <%= full && !mineHere ? 'disabled':'' %>><%= r.name %><%= full ? ' — ' + t('full') : '' %></option>
-            <% }) %>
+          <div class="step-label">1 · <%= t('destination') %></div>
+          <select id="destSel" onchange="fillRoutes()">
+            <option value=""><%= t('choose_destination') %></option>
           </select>
-          <label><%= t('stop') %></label>
+
+          <div class="step-label">2 · <%= t('route') %></div>
+          <select name="route_id" id="routeSel" onchange="fillStops();showSeats()">
+            <option value=""><%= t('choose_route') %></option>
+          </select>
+
+          <div class="step-label">3 · <%= t('stop') %></div>
           <select name="stop_id" id="stopSel" onchange="showTime()"><option value=""><%= t('choose_stop') %></option></select>
+
           <div class="timebox"><%= t('pickup_time') %>: <b id="timeOut">—</b></div>
           <div class="timebox"><%= t('available_seats') %>: <b id="seatsOut">—</b></div>
         </div>
         <button class="btn primary" type="submit"><%= t('submit_decl') %></button>
       </form>
     </div>
-
-
   </div>
 
   <!-- ΟΙ ΔΗΛΩΣΕΙΣ ΜΟΥ -->
@@ -63,9 +65,15 @@
           <div class="decl">
             <div>
               <div class="d-date"><%= prettyDate(ds) %></div>
-              <div class="d-meta"><% if (d.status==='work') { %><%= d.route || '' %><%= d.stop ? ' · ' + d.stop : '' %><%= d.pickup_time ? ' · ' + d.pickup_time : '' %><% } else { %><%= t('off') %><% } %></div>
+              <div class="d-meta"><% if (d.status==='work') { %><% if (d.destination) { %><b><%= d.destination %></b> · <% } %><%= d.route || '' %><%= d.stop ? ' · 📍 ' + d.stop : '' %><%= d.pickup_time ? ' · ' + d.pickup_time : '' %><% } else { %><%= t('off') %><% } %></div>
             </div>
-            <span class="badge <%= d.status==='work'?'work':'off' %>"><%= d.status==='work'?t('work'):t('off') %></span>
+            <div class="decl-actions">
+              <a class="btn small" href="/staff?tab=declare&date=<%= ds %>"><%= t('edit') %></a>
+              <form method="post" action="/staff/delete" class="inline" onsubmit="return confirm('<%= t('confirm_delete') %>')">
+                <input type="hidden" name="work_date" value="<%= ds %>" />
+                <button class="btn small danger" type="submit"><%= t('delete') %></button>
+              </form>
+            </div>
           </div>
         <% }) %>
       <% } %>
@@ -79,27 +87,53 @@
     const FAVORITE = <%- JSON.stringify(favorite || null) %>;
     const FAVORITE_STOP = <%- JSON.stringify(favoriteStop || null) %>;
     const T_CHOOSE_STOP = "<%= t('choose_stop') %>";
+    const T_CHOOSE_ROUTE = "<%= t('choose_route') %>";
+    const T_FULL = "<%= t('full') %>";
+    const T_NO_DEST = "<%= t('no_dest_group') %>";
+    const NONE = '__none__';
+    function destKey(r){ return (r.destination && String(r.destination).trim()) ? String(r.destination).trim() : NONE; }
+    function rem(r){ const used=USAGE[r.id]||0; const mineHere=MINE&&MINE.status==='work'&&String(MINE.route_id)===String(r.id); return Math.max(0, r.capacity-used+(mineHere?1:0)); }
+
+    function fillDestinations(){
+      const sel=document.getElementById('destSel');
+      const keys=[]; ROUTES.forEach(r=>{const k=destKey(r); if(keys.indexOf(k)<0)keys.push(k);});
+      keys.forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=(k===NONE?T_NO_DEST:k); sel.appendChild(o); });
+    }
+    function fillRoutes(preRouteId){
+      const dk=document.getElementById('destSel').value;
+      const sel=document.getElementById('routeSel'); sel.innerHTML='<option value="">'+T_CHOOSE_ROUTE+'</option>';
+      ROUTES.filter(r=>destKey(r)===dk).forEach(r=>{
+        const full=rem(r)<=0; const mineHere=MINE&&MINE.status==='work'&&String(MINE.route_id)===String(r.id);
+        const o=document.createElement('option'); o.value=r.id; o.textContent=r.name+(full?(' — '+T_FULL):'');
+        if(full&&!mineHere)o.disabled=true;
+        if(preRouteId&&String(preRouteId)===String(r.id))o.selected=true;
+        sel.appendChild(o);
+      });
+      fillStops(); showSeats();
+    }
     function showSeats(){
-      const rid=document.getElementById('routeSel').value;const r=ROUTES.find(x=>String(x.id)===String(rid));const out=document.getElementById('seatsOut');
+      const rid=document.getElementById('routeSel').value; const r=ROUTES.find(x=>String(x.id)===String(rid)); const out=document.getElementById('seatsOut');
       if(!r){out.textContent='—';return;}
-      const used=USAGE[r.id]||0;const mineHere=MINE&&MINE.status==='work'&&String(MINE.route_id)===String(r.id);
-      const rem=Math.max(0,r.capacity-used+(mineHere?1:0));out.textContent=rem+' / '+r.capacity+(rem===0?' (πλήρες)':'');
+      out.textContent=rem(r)+' / '+r.capacity+(rem(r)===0?' (πλήρες)':'');
     }
     function fillStops(pre){
-      const rid=document.getElementById('routeSel').value;const sel=document.getElementById('stopSel');sel.innerHTML='<option value="">'+T_CHOOSE_STOP+'</option>';
+      const rid=document.getElementById('routeSel').value; const sel=document.getElementById('stopSel'); sel.innerHTML='<option value="">'+T_CHOOSE_STOP+'</option>';
       const r=ROUTES.find(x=>String(x.id)===String(rid));
       if(r)r.stops.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name+(s.pickup_time?' — '+s.pickup_time:'');o.dataset.time=s.pickup_time||'';if(pre&&String(pre)===String(s.id))o.selected=true;sel.appendChild(o);});
-      showTime();showSeats();
+      showTime();
     }
-    function showTime(){const sel=document.getElementById('stopSel');const t=sel.options[sel.selectedIndex]&&sel.options[sel.selectedIndex].dataset.time;document.getElementById('timeOut').textContent=t||'—';}
+    function showTime(){const sel=document.getElementById('stopSel');const tm=sel.options[sel.selectedIndex]&&sel.options[sel.selectedIndex].dataset.time;document.getElementById('timeOut').textContent=tm||'—';}
     (function init(){
-      if (MINE && MINE.route_id) { document.getElementById('routeSel').value=MINE.route_id; fillStops(MINE.stop_id); }
-      else if (FAVORITE) { document.getElementById('routeSel').value=FAVORITE; fillStops(FAVORITE_STOP); }
+      fillDestinations();
+      let preR=null, preS=null;
+      if (MINE && MINE.route_id) { preR=MINE.route_id; preS=MINE.stop_id; }
+      else if (FAVORITE) { preR=FAVORITE; preS=FAVORITE_STOP; }
+      if (preR){ const r=ROUTES.find(x=>String(x.id)===String(preR)); if(r){ document.getElementById('destSel').value=destKey(r); fillRoutes(preR); fillStops(preS); showSeats(); } }
       var tabs=document.querySelectorAll('#staffTabs button');var secs=document.querySelectorAll('.tab');
       function act(n){tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===n));secs.forEach(s=>s.classList.toggle('active',s.id==='tab-'+n));}
       tabs.forEach(b=>b.addEventListener('click',()=>act(b.dataset.tab)));
       var qp=new URLSearchParams(location.search);var t=qp.get('tab');
-      if(!t){ t=(qp.has('saved')||qp.has('error')||qp.has('msg'))?'declare':'cal'; }
+      if(!t){ t=(qp.has('saved')||qp.has('error'))?'declare':'cal'; }
       act(t);
     })();
   </script>

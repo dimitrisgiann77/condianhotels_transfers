@@ -51,6 +51,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// notifications for the topbar (all logged-in users)
+app.use(async (req, res, next) => {
+  res.locals.notifUnread = 0; res.locals.notifs = [];
+  try {
+    if (req.session && req.session.user) {
+      res.locals.notifUnread = await data.countUnread(req.session.user.id);
+      res.locals.notifs = await data.getNotifications(req.session.user.id, 25);
+    }
+  } catch (e) { /* table may not exist yet */ }
+  next();
+});
+
 // ---------- Branding (public) ----------
 app.get('/brand.css', (req, res) => {
   res.setHeader('Content-Type', 'text/css');
@@ -208,6 +220,13 @@ app.post('/feedback/rating', requireRole('staff'), async (req, res) => {
   res.redirect('/feedback?saved=r');
 });
 
+// ---------- Notifications ----------
+app.post('/notifications/read', requireLogin, async (req, res) => {
+  try { await data.markNotificationsRead(req.session.user.id); } catch (e) {}
+  if ((req.get('accept') || '').indexOf('json') >= 0 || req.xhr) return res.json({ ok: true });
+  res.redirect(req.get('referer') || '/');
+});
+
 // ---------- Issue report (all logged-in users) ----------
 app.post('/report', requireLogin, async (req, res) => {
   const msg = (req.body.message || '').trim();
@@ -233,6 +252,31 @@ app.post('/report', requireLogin, async (req, res) => {
   res.redirect(back.indexOf('?')>=0 ? back+'&reported=1' : back+'?reported=1');
 });
 
+// notify drivers (and confirm to staff) when a pick up is created/edited/cancelled
+async function notifyPickupChange(user, workDate, routeId, stopId, kind) {
+  const routes = await data.getRoutesWithStops(false);
+  const r = routeId ? routes.find(x => String(x.id) === String(routeId)) : null;
+  const stop = r && stopId ? (r.stops || []).find(s => String(s.id) === String(stopId)) : null;
+  const dest = r && r.destination ? r.destination + ' · ' : '';
+  const rl = r ? (dest + r.name) : '';
+  const sl = stop ? (' · ' + stop.name + (stop.pickup_time ? ' (' + stop.pickup_time + ')' : '')) : '';
+  const pd = prettyDate(workDate);
+  if (kind === 'cancel') {
+    if (routeId) {
+      const drv = await data.getRouteDriverIds(routeId);
+      await data.notifyUsers(drv, 'pickup_cancel', 'Ακύρωση pick up', user.name + ' — ' + pd + ' · ' + rl + sl, '/driver?date=' + workDate);
+    }
+    await data.addNotification(user.id, 'pickup_cancel_self', 'Ακυρώθηκε το pick up σου', pd, '/staff?tab=mine');
+    return;
+  }
+  if (routeId) {
+    const drv = await data.getRouteDriverIds(routeId);
+    const title = kind === 'edit' ? 'Αλλαγή pick up' : 'Νέο pick up';
+    await data.notifyUsers(drv, 'pickup', title, user.name + ' — ' + pd + ' · ' + rl + sl, '/driver?date=' + workDate);
+  }
+  await data.addNotification(user.id, 'pickup_self', kind === 'edit' ? 'Ενημερώθηκε το pick up σου' : 'Καταχωρήθηκε το pick up σου', pd + (rl ? ' · ' + rl : '') + sl, '/staff?tab=mine');
+}
+
 // ---------- Staff ----------
 app.get('/staff', requireRole('staff'), async (req, res) => {
   const workDate = req.query.date || tomorrowStr();
@@ -246,11 +290,22 @@ app.get('/staff', requireRole('staff'), async (req, res) => {
   const declMap = await data.getUserDeclMap(req.session.user.id, days);
   const dn = i18n.dayNames(res.locals.lang);
   const weekcells = days.map((ds, i) => {
-    const d = declMap[ds]; let badge = null, lines = [];
-    if (d) { if (d.status === 'work') { badge = { text: 'Εργασία', cls: 'work' }; lines = [(d.route || '') + (d.stop ? ' · ' + d.stop : ''), d.pickup_time || ''].filter(Boolean); } else badge = { text: 'Ρεπό', cls: 'off' }; }
-    return { date: ds, dayName: dn[i], dayNum: ds.slice(8,10)+'/'+ds.slice(5,7), isToday: ds === todayStr(), badge, lines, href: '/staff?tab=declare&date=' + ds };
+    const d = declMap[ds];
+    const isPast = ds < todayStr();
+    let cell = { date: ds, dayName: dn[i], dayNum: ds.slice(8,10)+'/'+ds.slice(5,7),
+      isToday: ds === todayStr(), isPast, has: false,
+      href: '/staff?tab=declare&date=' + ds };
+    if (d && d.status === 'work') {
+      cell.has = true;
+      cell.time = d.pickup_time || '';
+      cell.destination = d.destination || '';
+      cell.route = d.route || '';
+      cell.stop = d.stop || '';
+    }
+    return cell;
   });
-  res.render('staff', { routes, workDate, mine, usage, favorite: me.favorite_route_id, favoriteStop: me.favorite_stop_id,
+  const destinations = [...new Set(routes.map(r => (r.destination||'').trim()).filter(Boolean))];
+  res.render('staff', { routes, destinations, workDate, mine, usage, favorite: me.favorite_route_id, favoriteStop: me.favorite_stop_id,
     saved: req.query.saved === '1', error: req.query.error || null, minDate: todayStr(), myDeclarations, msg: req.query.msg || null,
     weekcells, weekLabel: prettyDate(days[0]) + ' – ' + prettyDate(days[6]),
     prevHref: '/staff?tab=cal&w=' + (w - 1), nextHref: '/staff?tab=cal&w=' + (w + 1) });
@@ -270,6 +325,8 @@ app.post('/staff', requireRole('staff'), async (req, res) => {
     }
   }
   try {
+    const prev = await data.getMyDeclaration(req.session.user.id, work_date);
+    const isEdit = !!(prev && prev.status === 'work');
     await q(`INSERT INTO declarations (user_id, work_date, status, route_id, stop_id, updated_at)
              VALUES ($1,$2,$3,$4,$5, now())
              ON CONFLICT (user_id, work_date)
@@ -277,11 +334,21 @@ app.post('/staff', requireRole('staff'), async (req, res) => {
                            stop_id=EXCLUDED.stop_id, updated_at=now()`,
       [req.session.user.id, work_date, status, route_id, stop_id]);
     await data.logActivity(req.session.user.id, 'Δήλωση βάρδιας', work_date + ' · ' + (status === 'off' ? 'Ρεπό' : 'Εργασία' + (route_id ? ' (δρομ. ' + route_id + ')' : '')));
+    try { await notifyPickupChange(req.session.user, work_date, route_id, stop_id, isEdit ? 'edit' : 'new'); } catch (e) { console.error('[notif]', e.message); }
     res.redirect('/staff?date=' + encodeURIComponent(work_date) + '&saved=1');
   } catch (e) {
     console.error(e);
     res.status(500).render('error', { title: 'Σφάλμα', message: 'Η δήλωση δεν αποθηκεύτηκε.' });
   }
+});
+app.post('/staff/delete', requireRole('staff'), async (req, res) => {
+  const work_date = req.body.work_date;
+  try {
+    const removed = await data.deleteDeclaration(req.session.user.id, work_date);
+    await data.logActivity(req.session.user.id, 'Διαγραφή pick up', work_date);
+    if (removed) { try { await notifyPickupChange(req.session.user, work_date, removed.route_id, removed.stop_id, 'cancel'); } catch (e) {} }
+  } catch (e) { console.error('[staff/delete]', e.message); }
+  res.redirect('/staff?tab=mine&msg=' + encodeURIComponent('Το pick up διαγράφηκε'));
 });
 app.post('/staff/range', requireRole('staff'), async (req, res) => {
   const { from, to, status } = req.body;

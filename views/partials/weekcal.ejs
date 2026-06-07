@@ -6,12 +6,26 @@
     <a class="btn" href="<%= nextHref %>">▶</a>
   </div>
   <% } %>
+  <div class="wc-legend">
+    <span><i class="wc-dot has"></i> <%= t('work') %></span>
+    <span><i class="wc-dot no"></i> <%= t('not_declared') %></span>
+  </div>
   <div class="wc-grid">
     <% weekcells.forEach(function(c){ %>
-      <a class="wc-cell <%= c.isToday?'today':'' %>" href="<%= c.href %>">
-        <div class="wc-day"><%= c.dayName %> <span class="wc-num"><%= c.dayNum %></span></div>
-        <% if (c.badge) { %><span class="badge <%= c.badge.cls %>"><%= c.badge.text %></span><% } %>
-        <% (c.lines||[]).forEach(function(l){ %><div class="wc-line"><%= l %></div><% }) %>
+      <a class="wc-cell <%= c.isToday?'today':'' %> <%= c.has?'has':'empty' %> <%= c.isPast?'past':'' %>" href="<%= c.href %>">
+        <div class="wc-dayrow">
+          <span class="wc-day"><%= c.dayName %> <span class="wc-num"><%= c.dayNum %></span></span>
+          <% if (c.isToday) { %><span class="today-pill"><%= t('today') %></span><% } %>
+        </div>
+        <% if (c.has) { %>
+          <% if (c.time) { %><div class="wc-time"><%= c.time %></div><% } %>
+          <% if (c.destination) { %><div class="wc-dest"><%= c.destination %></div><% } %>
+          <% if (c.route) { %><div class="wc-route"><%= c.route %></div><% } %>
+          <% if (c.stop) { %><div class="wc-stop">📍 <%= c.stop %></div><% } %>
+        <% } else { %>
+          <div class="wc-empty-label"><%= t('not_declared') %></div>
+          <% if (!c.isPast) { %><div class="wc-add">+ <%= t('add_pickup') %></div><% } %>
+        <% } %>
       </a>
     <% }) %>
   </div>

@@ -3,6 +3,9 @@ const DICT = {
     // nav
     home: 'Αρχική', my_declaration: 'Τα Pick up μου', evaluation: 'Αξιολόγηση', profile: 'Προφίλ',
     logout: 'Έξοδος', program: 'Πρόγραμμα',
+    notifications: 'Ειδοποιήσεις', no_notifications: 'Δεν υπάρχουν νέες ειδοποιήσεις.', mark_all_read: 'Σήμανση όλων ως διαβασμένα', updates: 'Ενημερώσεις',
+    destination: 'Προορισμός', choose_destination: 'Διάλεξε προορισμό', edit: 'Επεξεργασία', delete: 'Διαγραφή',
+    confirm_delete: 'Να διαγραφεί αυτό το pick up;', not_declared: 'Χωρίς δήλωση', add_pickup: 'Δήλωσε pick up', no_dest_group: 'Χωρίς προορισμό', deleted_ok: 'Το pick up διαγράφηκε',
     report_issue: 'Αναφορά προβλήματος', report_title: 'Αναφορά προβλήματος',
     report_intro: 'Περίγραψε το πρόβλημα ή τη δυσκολία που αντιμετωπίζεις με κάποια λειτουργία. Η διοίκηση θα ειδοποιηθεί.',
     report_area: 'Σχετική λειτουργία', report_message: 'Περιγραφή', report_submit: 'Αποστολή',
@@ -47,6 +50,9 @@ const DICT = {
   en: {
     home: 'Home', my_declaration: 'My pick-ups', evaluation: 'Feedback', profile: 'Profile',
     logout: 'Logout', program: 'Schedule',
+    notifications: 'Notifications', no_notifications: 'No new notifications.', mark_all_read: 'Mark all as read', updates: 'Updates',
+    destination: 'Destination', choose_destination: 'Choose destination', edit: 'Edit', delete: 'Delete',
+    confirm_delete: 'Delete this pick-up?', not_declared: 'Not set', add_pickup: 'Add pick-up', no_dest_group: 'No destination', deleted_ok: 'Pick-up deleted',
     report_issue: 'Report an issue', report_title: 'Report an issue',
     report_intro: 'Describe the problem or difficulty you are facing with a feature. The management will be notified.',
     report_area: 'Related feature', report_message: 'Description', report_submit: 'Send',

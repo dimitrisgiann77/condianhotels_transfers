@@ -92,6 +92,17 @@ async function init() {
   await q(`ALTER TABLE users  ADD CONSTRAINT users_role_check CHECK (role IN ('admin','superuser','staff','driver'))`);
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS favorite_route_id INT REFERENCES routes(id) ON DELETE SET NULL`);
   await q(`ALTER TABLE routes ADD COLUMN IF NOT EXISTS capacity INT NOT NULL DEFAULT 8`);
+  await q(`ALTER TABLE routes ADD COLUMN IF NOT EXISTS destination TEXT`);
+  await q(`CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type TEXT,
+    title TEXT NOT NULL,
+    body TEXT,
+    link TEXT,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`);
 
   await q(`CREATE TABLE IF NOT EXISTS questions (
     id SERIAL PRIMARY KEY,

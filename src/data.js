@@ -67,7 +67,7 @@ async function getMyDeclaration(userId, workDate) {
 }
 async function getMyDeclarations(userId) {
   const { rows } = await q(`
-    SELECT to_char(d.work_date,'YYYY-MM-DD') AS work_date, d.status, r.name AS route, s.name AS stop, s.pickup_time
+    SELECT to_char(d.work_date,'YYYY-MM-DD') AS work_date, d.status, d.route_id, d.stop_id, r.name AS route, r.destination AS destination, s.name AS stop, s.pickup_time
     FROM declarations d
     LEFT JOIN routes r ON r.id=d.route_id
     LEFT JOIN stops  s ON s.id=d.stop_id
@@ -77,7 +77,7 @@ async function getMyDeclarations(userId) {
 }
 async function getUserDeclMap(userId, dates) {
   const { rows } = await q(`
-    SELECT to_char(d.work_date,'YYYY-MM-DD') AS wd, d.status, r.name AS route, s.name AS stop, s.pickup_time
+    SELECT to_char(d.work_date,'YYYY-MM-DD') AS wd, d.status, d.route_id, d.stop_id, r.name AS route, r.destination AS destination, s.name AS stop, s.pickup_time
     FROM declarations d LEFT JOIN routes r ON r.id=d.route_id LEFT JOIN stops s ON s.id=d.stop_id
     WHERE d.user_id=$1 AND d.work_date = ANY($2::date[])`, [userId, dates]);
   const m = {}; rows.forEach(r => { m[r.wd] = r; }); return m;
@@ -248,7 +248,7 @@ async function logActivity(userId, action, detail) {
   catch (e) { console.error('[activity] log failed:', e.message); }
 }
 async function getUserActivity(userId, limit = 100) {
-  const { rows } = await q('SELECT action, detail, created_at FROM activity_log WHERE user_id=$1 ORDER BY created_at DESC LIMIT $2', [userId, limit]);
+  const { rows } = await q('SELECT action, detail, created_at FROM activity_log WHERE user_id=$1 ORDER BY id DESC LIMIT $2', [userId, limit]);
   return rows;
 }
 async function getEmailLogFor(email, limit = 100) {
@@ -282,6 +282,38 @@ async function countOpenFeedback() {
   return rows[0].n;
 }
 
+async function getRouteDriverIds(routeId) {
+  const { rows } = await q('SELECT driver_id FROM driver_routes WHERE route_id=$1', [routeId]);
+  return rows.map(r => Number(r.driver_id));
+}
+async function getFutureDeclUserIds(routeId) {
+  const { rows } = await q("SELECT DISTINCT user_id FROM declarations WHERE route_id=$1 AND status='work' AND work_date >= CURRENT_DATE", [routeId]);
+  return rows.map(r => Number(r.user_id));
+}
+async function deleteDeclaration(userId, workDate) {
+  const { rows } = await q('DELETE FROM declarations WHERE user_id=$1 AND work_date=$2 RETURNING route_id, stop_id', [userId, workDate]);
+  return rows[0] || null;
+}
+async function addNotification(userId, type, title, body, link) {
+  if (!userId) return;
+  try { await q('INSERT INTO notifications (user_id,type,title,body,link) VALUES ($1,$2,$3,$4,$5)', [userId, type || null, title, body || null, link || null]); }
+  catch (e) { console.error('[notif] add failed:', e.message); }
+}
+async function notifyUsers(userIds, type, title, body, link) {
+  for (const uid of (userIds || [])) await addNotification(uid, type, title, body, link);
+}
+async function getNotifications(userId, limit = 30) {
+  const { rows } = await q("SELECT id, type, title, body, link, is_read, to_char(created_at,'YYYY-MM-DD\"T\"HH24:MI') AS created_at FROM notifications WHERE user_id=$1 ORDER BY id DESC LIMIT $2", [userId, limit]);
+  return rows;
+}
+async function countUnread(userId) {
+  const { rows } = await q('SELECT COUNT(*)::int AS n FROM notifications WHERE user_id=$1 AND is_read=FALSE', [userId]);
+  return rows[0].n;
+}
+async function markNotificationsRead(userId) {
+  await q('UPDATE notifications SET is_read=TRUE WHERE user_id=$1 AND is_read=FALSE', [userId]);
+}
+
 module.exports = {
   getRoutes, getStops, getAllStops, getRoutesWithStops, getDriverRouteIds,
   getPickups, getPendingStaff, getCounts, getMyDeclaration, getDrivers,
@@ -291,4 +323,6 @@ module.exports = {
   logActivity, getUserActivity, getEmailLogFor,
   routeStats, staffStats, ratingAverages, ratingByDriver, recentRatings, listQuestions,
   addFeedback, listFeedback, setFeedbackStatus, countOpenFeedback,
+  getRouteDriverIds, getFutureDeclUserIds, deleteDeclaration,
+  addNotification, notifyUsers, getNotifications, countUnread, markNotificationsRead,
 };

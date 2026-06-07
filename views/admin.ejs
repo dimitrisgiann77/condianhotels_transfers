@@ -89,8 +89,9 @@
         <div class="route">
           <div class="route-head">
             <form method="post" action="/admin/route/<%= r.id %>/rename" class="inline">
-              <input name="name" value="<%= r.name %>" style="width:auto;min-width:220px;font-weight:bold" />
-              <button class="link">Μετονομασία</button>
+              <input name="name" value="<%= r.name %>" style="width:auto;min-width:200px;font-weight:bold" />
+              <input name="destination" list="destList" value="<%= r.destination || '' %>" placeholder="Προορισμός" style="width:auto;min-width:140px" />
+              <button class="link">Αποθήκευση</button>
             </form>
             <span class="badge <%= r.active ? 'on':'off' %>"><%= r.active ? 'Ενεργό':'Ανενεργό' %></span>
             <form method="post" action="/admin/route/<%= r.id %>/toggle" class="inline"><button class="link"><%= r.active ? 'Απενεργοποίηση' : 'Ενεργοποίηση' %></button></form>
@@ -129,12 +130,15 @@
       </div>
 
       <h3>Νέο δρομολόγιο</h3>
+      <p class="muted small">Ο «Προορισμός» (π.χ. Ηράκλειο, Αρκαλοχώρι) ομαδοποιεί τα δρομολόγια — ο χρήστης διαλέγει πρώτα προορισμό και μετά δρομολόγιο.</p>
       <form method="post" action="/admin/route" class="row">
         <input name="name" placeholder="Όνομα δρομολογίου" required />
+        <input name="destination" list="destList" placeholder="Προορισμός" />
         <input name="sort_order" type="number" placeholder="Σειρά" style="width:90px" />
         <input name="capacity" type="number" placeholder="Θέσεις" value="8" style="width:90px" />
         <button class="btn primary">Προσθήκη</button>
       </form>
+      <datalist id="destList"><% [...new Set(routes.map(function(r){return (r.destination||'').trim()}).filter(Boolean))].forEach(function(d){ %><option value="<%= d %>"></option><% }) %></datalist>
     </div>
 
     <div class="card" id="stopForm">

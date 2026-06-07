@@ -246,3 +246,22 @@ td.grip{cursor:grab;color:var(--accent);font-size:16px;text-align:center}
 .pick-summary .ps-meta{font-size:13px;color:#3a4750;margin:3px 0 8px}
 .pick-fallback{margin:10px 0;border:1px solid var(--line,#e6e9ec);border-radius:10px;padding:8px 12px}
 .pick-fallback summary{cursor:pointer;color:var(--accent,#bb9549);font-weight:600;font-size:13px}
+
+/* ---- Day chips (multi-select) ---- */
+.daychips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.daychip{position:relative;display:flex;flex-direction:column;align-items:center;min-width:56px;padding:8px 6px;border:1.5px solid var(--line,#dfe3e7);border-radius:10px;cursor:pointer;background:#fff;user-select:none;transition:border-color .12s,background .12s}
+.daychip input{position:absolute;opacity:0;pointer-events:none}
+.daychip .dc-day{font-size:11px;font-weight:700;color:#6b7780;text-transform:uppercase;letter-spacing:.02em}
+.daychip .dc-num{font-size:14px;font-weight:700;color:#193847;margin-top:2px}
+.daychip.declared{border-color:#a9d8bb;background:#f1faf4}
+.daychip.on{border-color:var(--accent,#bb9549);background:var(--accent,#bb9549)}
+.daychip.on .dc-day,.daychip.on .dc-num{color:#fff}
+.daychip.declared::after{content:'✓';position:absolute;top:-6px;right:-6px;background:#1d8a4c;color:#fff;font-size:10px;width:16px;height:16px;line-height:16px;text-align:center;border-radius:50%}
+
+/* ---- Map pin: distinct color + number + name label ---- */
+.pin-wrap{position:relative;display:flex;flex-direction:column;align-items:center}
+.pin-label{position:absolute;bottom:36px;white-space:nowrap;background:#fff;border-left:4px solid #BB9549;border-radius:6px;padding:2px 7px;box-shadow:0 2px 6px rgba(0,0,0,.25);text-align:left;line-height:1.15}
+.pin-label .pl-name{display:block;font-size:11.5px;font-weight:800;color:#193847}
+.pin-label .pl-time{display:block;font-size:10px;color:#5b6770;font-weight:600}
+.pin-num{position:absolute;top:5px;color:#fff;font-size:12px;font-weight:800;text-shadow:0 1px 1px rgba(0,0,0,.4)}
+.pk-badge{display:inline-block;min-width:18px;height:18px;line-height:18px;text-align:center;color:#fff;border-radius:50%;font-size:11px;font-weight:700;margin-right:4px}

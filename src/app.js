@@ -15,7 +15,7 @@ const i18n = require('./i18n');
 const multer = require('multer');
 const avatarUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 3 * 1024 * 1024 } });
 const { requireLogin, requireRole, homeForRole } = require('./auth');
-const { tomorrowStr, prettyDate, todayStr, mondayOf, weekDays, DAYNAMES } = require('./util');
+const { tomorrowStr, prettyDate, todayStr, mondayOf, weekDays, DAYNAMES, datePlus } = require('./util');
 
 const app = express();
 const APP_TITLE = 'CONDIAN Hotels — Summer Transfers 2026';
@@ -306,7 +306,15 @@ app.get('/staff', requireRole('staff'), async (req, res) => {
   });
   const destinations = [...new Set(routes.map(r => (r.destination||'').trim()).filter(Boolean))];
   const mapPoints = await data.getMapPoints();
-  res.render('staff', { routes, destinations, mapPoints, workDate, mine, usage, favorite: me.favorite_route_id, favoriteStop: me.favorite_stop_id,
+  const upDates = []; for (let i = 0; i < 21; i++) upDates.push(datePlus(i));
+  const upMap = await data.getUserDeclMap(req.session.user.id, upDates);
+  const multiDates = upDates.map(ds => {
+    const dow = (new Date(ds + 'T00:00:00').getDay() + 6) % 7;
+    const dd = upMap[ds];
+    return { date: ds, dayName: dn[dow], num: ds.slice(8,10) + '/' + ds.slice(5,7),
+      declared: !!(dd && dd.status === 'work'), checked: ds === workDate };
+  });
+  res.render('staff', { multiDates, routes, destinations, mapPoints, workDate, mine, usage, favorite: me.favorite_route_id, favoriteStop: me.favorite_stop_id,
     saved: req.query.saved === '1', error: req.query.error || null, minDate: todayStr(), myDeclarations, msg: req.query.msg || null,
     weekcells, weekLabel: prettyDate(days[0]) + ' – ' + prettyDate(days[6]),
     prevHref: '/staff?tab=cal&w=' + (w - 1), nextHref: '/staff?tab=cal&w=' + (w + 1) });
@@ -340,6 +348,57 @@ app.post('/staff', requireRole('staff'), async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).render('error', { title: 'Σφάλμα', message: 'Η δήλωση δεν αποθηκεύτηκε.' });
+  }
+});
+async function notifyPickupMulti(user, dates, routeId, stopId, anyEdit) {
+  if (!dates.length) return;
+  dates = dates.slice().sort();
+  const routes = await data.getRoutesWithStops(false);
+  const r = routeId ? routes.find(x => String(x.id) === String(routeId)) : null;
+  const stop = r && stopId ? (r.stops || []).find(s => String(s.id) === String(stopId)) : null;
+  const dest = r && r.destination ? r.destination + ' · ' : '';
+  const rl = r ? (dest + r.name) : '';
+  const sl = stop ? (' · ' + stop.name + (stop.pickup_time ? ' (' + stop.pickup_time + ')' : '')) : '';
+  const range = dates.length === 1 ? prettyDate(dates[0]) : (dates.length + ' ημέρες (' + prettyDate(dates[0]) + ' – ' + prettyDate(dates[dates.length - 1]) + ')');
+  if (routeId) {
+    const drv = await data.getRouteDriverIds(routeId);
+    await data.notifyUsers(drv, 'pickup', anyEdit ? 'Ενημέρωση pick up' : 'Νέα pick up', user.name + ' — ' + rl + sl + ' · ' + range, '/driver');
+  }
+  await data.addNotification(user.id, 'pickup_self', 'Καταχωρήθηκαν τα pick up σου', range + (rl ? ' · ' + rl : '') + sl, '/staff?tab=mine');
+}
+app.post('/staff/multi', requireRole('staff'), async (req, res) => {
+  let dates = req.body.work_dates || [];
+  if (!Array.isArray(dates)) dates = [dates];
+  dates = [...new Set(dates.filter(Boolean))].sort();
+  const route_id = req.body.route_id || null;
+  const stop_id = req.body.stop_id || null;
+  if (!dates.length) return res.redirect('/staff?tab=declare&msg=' + encodeURIComponent('Διάλεξε τουλάχιστον μία ημέρα'));
+  if (!route_id || !stop_id) return res.redirect('/staff?tab=declare&msg=' + encodeURIComponent('Διάλεξε σημείο παραλαβής στον χάρτη'));
+  const routes = await data.getRoutes(false);
+  const route = routes.find(r => String(r.id) === String(route_id));
+  const cap = route ? route.capacity : 8;
+  const saved = [], full = []; let anyEdit = false;
+  try {
+    for (const ds of dates) {
+      const used = await data.countOnRoute(ds, route_id, req.session.user.id);
+      if (used >= cap) { full.push(ds); continue; }
+      const prev = await data.getMyDeclaration(req.session.user.id, ds);
+      if (prev && prev.status === 'work') anyEdit = true;
+      await q(`INSERT INTO declarations (user_id, work_date, status, route_id, stop_id, updated_at)
+               VALUES ($1,$2,'work',$3,$4, now())
+               ON CONFLICT (user_id, work_date)
+               DO UPDATE SET status='work', route_id=EXCLUDED.route_id, stop_id=EXCLUDED.stop_id, updated_at=now()`,
+        [req.session.user.id, ds, route_id, stop_id]);
+      saved.push(ds);
+    }
+    await data.logActivity(req.session.user.id, 'Δήλωση pick up', saved.join(', '));
+    try { await notifyPickupMulti(req.session.user, saved, route_id, stop_id, anyEdit); } catch (e) { console.error('[notif]', e.message); }
+    let msg = saved.length ? ('Αποθηκεύτηκαν ' + saved.length + ' ημέρες') : 'Καμία ημέρα δεν αποθηκεύτηκε';
+    if (full.length) msg += ', ' + full.length + ' πλήρεις παραλείφθηκαν';
+    res.redirect('/staff?tab=mine&msg=' + encodeURIComponent(msg));
+  } catch (e) {
+    console.error(e);
+    res.redirect('/staff?tab=declare&msg=' + encodeURIComponent('Σφάλμα κατά την αποθήκευση'));
   }
 });
 app.post('/staff/delete', requireRole('staff'), async (req, res) => {

@@ -25,9 +25,10 @@ router.get('/', async (req, res) => {
   const regCode = await data.getSetting('reg_code');
   const questions = await data.listQuestions();
   const emailLog = await data.getEmailLog();
+  const feedback = await data.listFeedback();
   res.render('admin', {
     routes, users, drivers, driverRoutes, colors: brand.getColors(), pendingUsers, regCode, questions,
-    supervisors, hotels, editUser, pdf: brand.getPdf(), emailLog,
+    supervisors, hotels, editUser, pdf: brand.getPdf(), emailLog, feedback,
     allRoutes: routes,
     msg: req.query.msg || null,
     tomorrow: tomorrowStr(),
@@ -180,6 +181,14 @@ router.get('/questions', async (req, res) => {
   const questions = await data.listQuestions();
   const emailLog = await data.getEmailLog();
   res.render('admin_questions', { questions, msg: req.query.msg || null });
+});
+router.post('/feedback/:id/resolve', async (req, res) => {
+  await data.setFeedbackStatus(req.params.id, 'resolved');
+  res.redirect('/admin?tab=feedback');
+});
+router.post('/feedback/:id/reopen', async (req, res) => {
+  await data.setFeedbackStatus(req.params.id, 'open');
+  res.redirect('/admin?tab=feedback');
 });
 router.post('/question/:id/answer', async (req, res) => {
   await q('UPDATE questions SET answer=$1, answered_at=now() WHERE id=$2',

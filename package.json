@@ -1,6 +1,6 @@
 {
   "name": "condian-transfers",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "private": true,
   "description": "CONDIAN Hotels — Summer Transfers 2026: staff shift declarations + driver pickup dashboard",
   "scripts": {

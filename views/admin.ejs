@@ -7,6 +7,7 @@
     <button type="button" data-tab="users">Χρήστες & Οδηγοί</button>
     <button type="button" data-tab="questions">Ερωτήματα</button>
     <button type="button" data-tab="comm">Επικοινωνία</button>
+    <button type="button" data-tab="feedback">Αναφορές<% if (typeof feedback!=='undefined' && feedback.filter(function(f){return f.status==='open'}).length){ %> <span class="badge off"><%= feedback.filter(function(f){return f.status==='open'}).length %></span><% } %></button>
     <% if (user.role === 'admin') { %><button type="button" data-tab="appearance">Εμφάνιση</button><% } %>
   </div>
 
@@ -348,6 +349,32 @@
           </tbody>
         </table>
       <% } %>
+    </div>
+  </div>
+
+  <!-- ============ ΑΝΑΦΟΡΕΣ ΧΡΗΣΤΩΝ ============ -->
+  <div class="tab" id="tab-feedback">
+    <div class="card">
+      <h1>Αναφορές προβλημάτων από χρήστες</h1>
+      <p class="muted small">Όταν κάποιος χρήστης πατήσει «Αναφορά προβλήματος», το μήνυμα εμφανίζεται εδώ και αποστέλλεται και με email.</p>
+      <% var fb = (typeof feedback!=='undefined')?feedback:[]; var AL={general:'Γενικά',pickup:'Δήλωση pick up',schedule:'Πρόγραμμα/Οδηγός',account:'Σύνδεση/Λογαριασμός',notify:'Ειδοποιήσεις/Email',map:'Χάρτης',other:'Άλλο'}; %>
+      <% if (fb.length===0) { %><p class="muted">Δεν υπάρχουν αναφορές.</p><% } %>
+      <% fb.forEach(function(f){ %>
+        <div class="route">
+          <div class="route-head">
+            <strong><%= f.person || 'Άγνωστος' %></strong>
+            <span class="muted small"><%= (f.person_role||'') %><%= f.person_hotel?(' · '+f.person_hotel):'' %> · <%= f.person_email||'' %> · <%= new Date(f.created_at).toLocaleString('el-GR') %></span>
+            <% if (f.area) { %><span class="badge"><%= AL[f.area]||f.area %></span><% } %>
+            <% if (f.status==='open') { %><span class="badge off">Ανοιχτό</span><% } else { %><span class="badge on">Επιλύθηκε</span><% } %>
+          </div>
+          <p style="margin:6px 0;white-space:pre-wrap"><%= f.message %></p>
+          <% if (f.status==='open') { %>
+            <form method="post" action="/admin/feedback/<%= f.id %>/resolve" style="display:inline"><button class="btn">Σήμανση ως επιλυμένο</button></form>
+          <% } else { %>
+            <form method="post" action="/admin/feedback/<%= f.id %>/reopen" style="display:inline"><button class="btn ghost">Άνοιγμα ξανά</button></form>
+          <% } %>
+        </div>
+      <% }) %>
     </div>
   </div>
 

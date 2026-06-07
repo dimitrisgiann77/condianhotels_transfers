@@ -40,15 +40,51 @@
             <a href="/staff?tab=declare"><%= t('my_declaration') %></a>
             <a href="/feedback"><%= t('evaluation') %></a>
           <% } %>
+          <button type="button" class="usermenu-link" onclick="openReport(event)"><%= t('report_issue') %></button>
           <a href="/profile"><%= t('profile') %></a>
           <div class="usermenu-lang"><span class="muted small"><%= t('language') %>:</span> <a href="/lang/el" class="<%= lang==='el'?'lang-on':'' %>">EL</a> · <a href="/lang/en" class="<%= lang==='en'?'lang-on':'' %>">EN</a></div>
           <form method="post" action="/logout"><button type="submit" class="usermenu-link"><%= t('logout') %></button></form>
+        </div>
+      </div>
+      <!-- Report issue modal -->
+      <div class="rpt-backdrop" id="rptBackdrop" onclick="if(event.target===this)closeReport()">
+        <div class="rpt-modal" role="dialog" aria-modal="true">
+          <h3><%= t('report_title') %></h3>
+          <p class="muted small"><%= t('report_intro') %></p>
+          <form method="post" action="/report">
+            <label><%= t('report_area') %></label>
+            <select name="area">
+              <option value="general"><%= t('area_general') %></option>
+              <option value="pickup"><%= t('area_pickup') %></option>
+              <option value="schedule"><%= t('area_schedule') %></option>
+              <option value="account"><%= t('area_account') %></option>
+              <option value="notify"><%= t('area_notify') %></option>
+              <option value="map"><%= t('area_map') %></option>
+              <option value="other"><%= t('area_other') %></option>
+            </select>
+            <label><%= t('report_message') %></label>
+            <textarea name="message" rows="4" required></textarea>
+            <div class="rpt-actions">
+              <button type="button" class="btn ghost" onclick="closeReport()"><%= t('report_cancel') %></button>
+              <button type="submit" class="btn"><%= t('report_submit') %></button>
+            </div>
+          </form>
         </div>
       </div>
     <% } %>
   </header>
   <script>
     function toggleUserMenu(e){ e.stopPropagation(); var p=document.getElementById('userPanel'); if(p) p.classList.toggle('open'); }
+    function openReport(e){ if(e){e.stopPropagation();} var p=document.getElementById('userPanel'); if(p)p.classList.remove('open'); var b=document.getElementById('rptBackdrop'); if(b)b.classList.add('open'); }
+    function closeReport(){ var b=document.getElementById('rptBackdrop'); if(b)b.classList.remove('open'); }
+    document.addEventListener('DOMContentLoaded', function(){
+      if(/[?&]reported=1/.test(location.search)){
+        var t=document.createElement('div'); t.className='rpt-toast'; t.textContent=<%- JSON.stringify(t('report_sent')) %>;
+        document.body.appendChild(t); setTimeout(function(){t.classList.add('show');},30);
+        setTimeout(function(){t.classList.remove('show');setTimeout(function(){t.remove();},400);},4000);
+        try{ history.replaceState(null,'',location.pathname+location.search.replace(/([?&])reported=1&?/,'$1').replace(/[?&]$/,'')); }catch(e){}
+      }
+    });
     document.addEventListener('click', function(){ var p=document.getElementById('userPanel'); if(p) p.classList.remove('open'); });
   </script>
   <main class="container">

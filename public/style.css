@@ -177,3 +177,16 @@ td.grip{cursor:grab;color:var(--accent);font-size:16px;text-align:center}
 
 .pin-div{background:none;border:none}
 .leaflet-container{border-radius:var(--radius)}
+
+/* ---- Report issue modal ---- */
+.rpt-backdrop{display:none;position:fixed;inset:0;background:rgba(25,56,71,.45);z-index:1000;align-items:flex-start;justify-content:center}
+.rpt-backdrop.open{display:flex}
+.rpt-modal{background:#fff;border-radius:14px;max-width:460px;width:92%;margin-top:8vh;padding:20px 22px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
+.rpt-modal h3{margin:0 0 6px;color:var(--ink,#193847)}
+.rpt-modal label{display:block;font-weight:600;font-size:13px;margin:12px 0 4px;color:var(--ink,#193847)}
+.rpt-modal select,.rpt-modal textarea{width:100%;padding:9px 10px;border:1px solid #ccc;border-radius:8px;font-family:inherit;font-size:14px;box-sizing:border-box}
+.rpt-modal textarea{resize:vertical}
+.rpt-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.btn.ghost{background:#eef1f3;color:#193847}
+.rpt-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#193847;color:#fff;padding:12px 18px;border-radius:10px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .3s,transform .3s;z-index:1100;max-width:90%}
+.rpt-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}

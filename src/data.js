@@ -260,6 +260,28 @@ async function getEmailLog(limit = 80) {
   return rows;
 }
 
+async function addFeedback(userId, area, message) {
+  const { rows } = await q('INSERT INTO feedback (user_id, area, message) VALUES ($1,$2,$3) RETURNING id', [userId, area || null, message]);
+  return rows[0].id;
+}
+async function listFeedback(limit = 200) {
+  const { rows } = await q(`
+    SELECT f.id, f.area, f.message, f.status, f.created_at, f.resolved_at,
+           u.name AS person, u.email AS person_email, u.role AS person_role, u.hotel AS person_hotel
+    FROM feedback f LEFT JOIN users u ON u.id=f.user_id
+    ORDER BY (f.status='open') DESC, f.created_at DESC
+    LIMIT $1`, [limit]);
+  return rows;
+}
+async function setFeedbackStatus(id, status) {
+  const resolved = status === 'resolved';
+  await q('UPDATE feedback SET status=$1, resolved_at=' + (resolved ? 'now()' : 'NULL') + ' WHERE id=$2', [status, id]);
+}
+async function countOpenFeedback() {
+  const { rows } = await q("SELECT COUNT(*)::int AS n FROM feedback WHERE status='open'");
+  return rows[0].n;
+}
+
 module.exports = {
   getRoutes, getStops, getAllStops, getRoutesWithStops, getDriverRouteIds,
   getPickups, getPendingStaff, getCounts, getMyDeclaration, getDrivers,
@@ -268,4 +290,5 @@ module.exports = {
   getSupervisors, getUsersAdmin, getHotels, getDriversWeeklyDue, getWeekPickups, getUserDeclMap, getEmailLog,
   logActivity, getUserActivity, getEmailLogFor,
   routeStats, staffStats, ratingAverages, ratingByDriver, recentRatings, listQuestions,
+  addFeedback, listFeedback, setFeedbackStatus, countOpenFeedback,
 };

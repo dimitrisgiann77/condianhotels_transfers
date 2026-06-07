@@ -3,6 +3,12 @@ const DICT = {
     // nav
     home: 'Αρχική', my_declaration: 'Τα Pick up μου', evaluation: 'Αξιολόγηση', profile: 'Προφίλ',
     logout: 'Έξοδος', program: 'Πρόγραμμα',
+    report_issue: 'Αναφορά προβλήματος', report_title: 'Αναφορά προβλήματος',
+    report_intro: 'Περίγραψε το πρόβλημα ή τη δυσκολία που αντιμετωπίζεις με κάποια λειτουργία. Η διοίκηση θα ειδοποιηθεί.',
+    report_area: 'Σχετική λειτουργία', report_message: 'Περιγραφή', report_submit: 'Αποστολή',
+    report_sent: 'Ευχαριστούμε! Η αναφορά στάλθηκε στη διοίκηση.', report_cancel: 'Άκυρο',
+    area_general: 'Γενικά', area_pickup: 'Δήλωση pick up', area_schedule: 'Πρόγραμμα / Οδηγός',
+    area_account: 'Σύνδεση / Λογαριασμός', area_notify: 'Ειδοποιήσεις / Email', area_map: 'Χάρτης', area_other: 'Άλλο',
     // login / register
     signin: 'Σύνδεση', username: 'Όνομα χρήστη', password: 'Κωδικός', enter: 'Είσοδος',
     register_link: 'Εγγραφή νέου χρήστη', have_account: 'Έχω ήδη λογαριασμό',
@@ -41,6 +47,12 @@ const DICT = {
   en: {
     home: 'Home', my_declaration: 'My pick-ups', evaluation: 'Feedback', profile: 'Profile',
     logout: 'Logout', program: 'Schedule',
+    report_issue: 'Report an issue', report_title: 'Report an issue',
+    report_intro: 'Describe the problem or difficulty you are facing with a feature. The management will be notified.',
+    report_area: 'Related feature', report_message: 'Description', report_submit: 'Send',
+    report_sent: 'Thank you! Your report was sent to the management.', report_cancel: 'Cancel',
+    area_general: 'General', area_pickup: 'Pick-up request', area_schedule: 'Schedule / Driver',
+    area_account: 'Login / Account', area_notify: 'Notifications / Email', area_map: 'Map', area_other: 'Other',
     signin: 'Sign in', username: 'Username', password: 'Password', enter: 'Log in',
     register_link: 'Register new account', have_account: 'I already have an account',
     register_title: 'Staff registration', reg_disabled: 'Registration is currently unavailable. Please contact management.',

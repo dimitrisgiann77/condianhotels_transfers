@@ -208,6 +208,31 @@ app.post('/feedback/rating', requireRole('staff'), async (req, res) => {
   res.redirect('/feedback?saved=r');
 });
 
+// ---------- Issue report (all logged-in users) ----------
+app.post('/report', requireLogin, async (req, res) => {
+  const msg = (req.body.message || '').trim();
+  const area = (req.body.area || '').trim() || null;
+  const back = req.get('referer') || '/';
+  if (!msg) return res.redirect(back);
+  try {
+    const me = await data.getUser(req.session.user.id);
+    await data.addFeedback(me.id, area, msg);
+    await data.logActivity(me.id, 'feedback', area || 'general');
+    const to = (await data.getSetting('feedback_email')) || process.env.FEEDBACK_EMAIL || process.env.ADMIN_EMAIL || 'info@condianhotels.gr';
+    const areaLabels = { general:'Γενικά', pickup:'Δήλωση pick up', schedule:'Πρόγραμμα/Οδηγός', account:'Σύνδεση/Λογαριασμός', notify:'Ειδοποιήσεις/Email', map:'Χάρτης', other:'Άλλο' };
+    const esc = (x)=>String(x||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const html = `<div style="font-family:Arial,sans-serif;font-size:14px;color:#193847">
+      <h2 style="color:#193847">Νέα αναφορά προβλήματος</h2>
+      <p><strong>Από:</strong> ${esc(me.name)} (${esc(me.role)})${me.hotel?(' · '+esc(me.hotel)):''}<br>
+      <strong>Email:</strong> ${esc(me.email||'-')} · <strong>Κινητό:</strong> ${esc(me.phone||'-')}<br>
+      <strong>Λειτουργία:</strong> ${esc(areaLabels[area]||area||'-')}</p>
+      <p style="white-space:pre-wrap;background:#f4f6f8;border-radius:8px;padding:12px">${esc(msg)}</p>
+      <p style="color:#888;font-size:12px">CONDIAN Transfers · αυτόματο μήνυμα</p></div>`;
+    mailer.send(to, 'Αναφορά προβλήματος — ' + (me.name||'χρήστης'), html).catch(e=>console.error('[report] mail', e.message));
+  } catch (e) { console.error('[report]', e.message); }
+  res.redirect(back.indexOf('?')>=0 ? back+'&reported=1' : back+'?reported=1');
+});
+
 // ---------- Staff ----------
 app.get('/staff', requireRole('staff'), async (req, res) => {
   const workDate = req.query.date || tomorrowStr();

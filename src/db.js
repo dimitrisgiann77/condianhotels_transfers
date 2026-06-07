@@ -115,6 +115,16 @@ async function init() {
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`);
 
+  await q(`CREATE TABLE IF NOT EXISTS feedback (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE SET NULL,
+    area TEXT,
+    message TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    resolved_at TIMESTAMPTZ
+  )`);
+
   // one-time: set all route capacities to 8
   try {
     const done = await q(`SELECT value FROM settings WHERE key='cap8_applied'`);

@@ -305,7 +305,8 @@ app.get('/staff', requireRole('staff'), async (req, res) => {
     return cell;
   });
   const destinations = [...new Set(routes.map(r => (r.destination||'').trim()).filter(Boolean))];
-  res.render('staff', { routes, destinations, workDate, mine, usage, favorite: me.favorite_route_id, favoriteStop: me.favorite_stop_id,
+  const mapPoints = await data.getMapPoints();
+  res.render('staff', { routes, destinations, mapPoints, workDate, mine, usage, favorite: me.favorite_route_id, favoriteStop: me.favorite_stop_id,
     saved: req.query.saved === '1', error: req.query.error || null, minDate: todayStr(), myDeclarations, msg: req.query.msg || null,
     weekcells, weekLabel: prettyDate(days[0]) + ' – ' + prettyDate(days[6]),
     prevHref: '/staff?tab=cal&w=' + (w - 1), nextHref: '/staff?tab=cal&w=' + (w + 1) });

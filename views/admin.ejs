@@ -4,6 +4,7 @@
   <div class="tabs" id="adminTabs">
     <button type="button" data-tab="overview" class="active">Επισκόπηση</button>
     <button type="button" data-tab="routes">Δρομολόγια</button>
+    <button type="button" data-tab="points">Σημεία &amp; χάρτης</button>
     <button type="button" data-tab="users">Χρήστες & Οδηγοί</button>
     <button type="button" data-tab="questions">Ερωτήματα</button>
     <button type="button" data-tab="comm">Επικοινωνία</button>
@@ -142,17 +143,62 @@
     </div>
 
     <div class="card" id="stopForm">
-      <h2><%= editStop ? 'Επεξεργασία στάσης' : 'Νέα στάση' %></h2>
+      <h2><%= editStop ? 'Επεξεργασία στάσης δρομολογίου' : 'Προσθήκη σημείου σε δρομολόγιο' %></h2>
+      <p class="muted small">Διάλεξε ένα σημείο παραλαβής (ορίζεται μία φορά στην καρτέλα «Σημεία &amp; χάρτης») και βάλε την ώρα που περνά το λεωφορείο. Ίδιο σημείο μπορεί να μπει σε πολλά δρομολόγια.</p>
       <form method="post" action="<%= editStop ? '/admin/stop/'+editStop.id : '/admin/stop' %>">
-        <label>Δρομολόγιο</label>
-        <select name="route_id" required>
-          <% routes.forEach(function(r){ %><option value="<%= r.id %>" <%= editStop && editStop.route_id===r.id ? 'selected':'' %>><%= r.name %></option><% }) %>
-        </select>
         <div class="grid2">
-          <div><label>Όνομα στάσης</label><input name="name" value="<%= editStop ? editStop.name : '' %>" required /></div>
+          <div>
+            <label>Δρομολόγιο</label>
+            <select name="route_id" required>
+              <% routes.forEach(function(r){ %><option value="<%= r.id %>" <%= editStop && editStop.route_id===r.id ? 'selected':'' %>><%= (r.destination?r.destination+' · ':'')+r.name %></option><% }) %>
+            </select>
+          </div>
+          <div>
+            <label>Σημείο παραλαβής</label>
+            <select name="point_id" required>
+              <option value="">— Διάλεξε σημείο —</option>
+              <% points.forEach(function(pt){ %><option value="<%= pt.id %>" <%= editStop && editStop.point_id===pt.id ? 'selected':'' %>><%= pt.name %><%= (pt.lat==null||pt.lng==null)?' (χωρίς θέση)':'' %></option><% }) %>
+            </select>
+          </div>
           <div><label>Ώρα (π.χ. 06:05)</label><input name="pickup_time" value="<%= editStop ? (editStop.pickup_time||'') : '' %>" /></div>
           <div><label>Σειρά</label><input name="sort_order" type="number" value="<%= editStop ? editStop.sort_order : 0 %>" /></div>
         </div>
+        <button class="btn primary"><%= editStop ? 'Αποθήκευση' : 'Προσθήκη' %></button>
+        <% if (editStop) { %><a class="btn" href="/admin?tab=routes#stopForm">Άκυρο</a><% } %>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ ΣΗΜΕΙΑ & ΧΑΡΤΗΣ ============ -->
+  <div class="tab" id="tab-points">
+    <div class="card">
+      <h2>Σημεία παραλαβής (κοινά)</h2>
+      <p class="muted small">Όρισε κάθε σημείο <b>μία φορά</b> με τη θέση του στον χάρτη. Μετά μπες στην καρτέλα «Δρομολόγια» και πρόσθεσε το σημείο σε όποια δρομολόγια θέλεις, με τη δική του ώρα.</p>
+      <% if (!points || points.length===0) { %><p class="muted">Δεν υπάρχουν σημεία ακόμη.</p><% } else { %>
+        <table class="tbl">
+          <thead><tr><th>Σημείο</th><th>Θέση</th><th>Σε # δρομολόγια</th><th></th></tr></thead>
+          <tbody>
+          <% points.forEach(function(pt){ %>
+            <tr>
+              <td><%= pt.name %></td>
+              <td><%= (pt.lat!=null&&pt.lng!=null)?'✓ στον χάρτη':'— χωρίς θέση' %></td>
+              <td><%= pt.route_count %></td>
+              <td class="nowrap">
+                <a class="link" href="/admin?tab=points&point_edit=<%= pt.id %>#pointForm">Επεξεργασία</a>
+                <form method="post" action="/admin/point/<%= pt.id %>/delete" class="inline" onsubmit="return confirm('Διαγραφή σημείου; Θα αφαιρεθεί και από όλα τα δρομολόγια.')"><button class="link danger">×</button></form>
+              </td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+
+    <div class="card" id="pointForm">
+      <h2><%= editPoint ? 'Επεξεργασία σημείου' : 'Νέο σημείο' %></h2>
+      <form method="post" action="<%= editPoint ? '/admin/point/'+editPoint.id : '/admin/point' %>">
+        <label>Όνομα σημείου</label>
+        <input name="name" value="<%= editPoint ? editPoint.name : '' %>" placeholder="π.χ. Sergios, Κοκκίνη Χάνι" required />
         <label>Διεύθυνση (auto-εύρεση πινέζας)</label>
         <div class="row">
           <input id="geoAddr" placeholder="π.χ. Κοκκίνη Χάνι, Ηράκλειο" style="flex:1" />
@@ -162,12 +208,12 @@
         <label>Θέση πινέζας — ή κάνε κλικ στον χάρτη</label>
         <div id="adminMap" class="map"></div>
         <div class="grid2">
-          <div><label>Lat</label><input id="stopLat" name="lat" value="<%= editStop && editStop.lat!=null ? editStop.lat : '' %>" readonly /></div>
-          <div><label>Lng</label><input id="stopLng" name="lng" value="<%= editStop && editStop.lng!=null ? editStop.lng : '' %>" readonly /></div>
+          <div><label>Lat</label><input id="pointLat" name="lat" value="<%= editPoint && editPoint.lat!=null ? editPoint.lat : '' %>" readonly /></div>
+          <div><label>Lng</label><input id="pointLng" name="lng" value="<%= editPoint && editPoint.lng!=null ? editPoint.lng : '' %>" readonly /></div>
         </div>
-        <p class="muted small">Κάνε κλικ στον χάρτη ή χρησιμοποίησε «Βρες στον χάρτη». Δωρεάν χάρτης OpenStreetMap.</p>
-        <button class="btn primary"><%= editStop ? 'Αποθήκευση' : 'Προσθήκη στάσης' %></button>
-        <% if (editStop) { %><a class="btn" href="/admin#stopForm">Άκυρο</a><% } %>
+        <p class="muted small">Δωρεάν χάρτης OpenStreetMap.</p>
+        <button class="btn primary"><%= editPoint ? 'Αποθήκευση' : 'Προσθήκη σημείου' %></button>
+        <% if (editPoint) { %><a class="btn" href="/admin?tab=points#pointForm">Άκυρο</a><% } %>
       </form>
     </div>
   </div>
@@ -503,7 +549,7 @@
   <script>
     function promptPw(f){ const p = prompt('Νέος κωδικός:'); if(!p) return false; f.password.value = p; return true; }
     function addBulkRow(){var t=document.getElementById('bulkTpl');if(t)document.getElementById('bulkRows').appendChild(t.content.cloneNode(true));}
-    window.ADMIN_STOP = <%- JSON.stringify(editStop || null) %>;
+    window.ADMIN_POINT = <%- JSON.stringify(editPoint || null) %>;
     function pv(){
       var p=document.getElementById('themePreview'); if(!p) return;
       var v=function(id){var e=document.getElementById(id);return e?e.value:'';};
@@ -528,7 +574,7 @@
         if(!document.getElementById('tab-'+name)) name='overview';
         tabs.forEach(function(b){b.classList.toggle('active', b.dataset.tab===name);});
         sections.forEach(function(s){s.classList.toggle('active', s.id==='tab-'+name);});
-        if(name==='routes'&&window.refreshAdminMap)window.refreshAdminMap();
+        if(name==='points'&&window.refreshAdminMap)window.refreshAdminMap();
         try{localStorage.setItem('adminTab',name);}catch(e){}
       }
       tabs.forEach(function(b){b.addEventListener('click',function(){activate(b.dataset.tab);});});
@@ -536,10 +582,10 @@
       var initial='overview';
       var qp=new URLSearchParams(location.search).get('tab');
       if(qp) initial=qp;
-      else if(window.ADMIN_STOP) initial='routes';
+      else if(window.ADMIN_POINT) initial='points';
       else { try{var t=localStorage.getItem('adminTab'); if(t) initial=t;}catch(e){} }
       activate(initial);
-      if(window.ADMIN_STOP){var sf=document.getElementById('stopForm'); if(sf) sf.scrollIntoView();}
+      if(window.ADMIN_POINT){var pf=document.getElementById('pointForm'); if(pf) pf.scrollIntoView();}
       pv();
     })();
   </script>

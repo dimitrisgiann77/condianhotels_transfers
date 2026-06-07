@@ -230,3 +230,19 @@ td.grip{cursor:grab;color:var(--accent);font-size:16px;text-align:center}
 .btn.small{padding:5px 10px;font-size:12.5px}
 .btn.danger{background:#fbe9e9;color:#c0392b}
 .btn.danger:hover{background:#f6d6d6}
+
+/* ---- Pickup map (points + selection) ---- */
+.map-tall{height:480px}
+.pin-wrap{position:relative;display:flex;flex-direction:column;align-items:center}
+.pin-time{position:absolute;top:-14px;white-space:nowrap;background:#193847;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:7px;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.pk-pop{min-width:180px}
+.pk-pop b{display:block;margin-bottom:6px;color:#193847;font-size:13.5px}
+.pk-svc{display:block;width:100%;text-align:left;margin:3px 0;padding:7px 9px;border:1px solid #d7dbdf;border-radius:8px;background:#f7f9fa;cursor:pointer;font-size:12.5px;color:#24303a}
+.pk-svc:hover:not([disabled]){border-color:var(--accent,#bb9549);background:#fff}
+.pk-svc[disabled]{opacity:.5;cursor:not-allowed;text-decoration:line-through}
+.pk-svc-v{margin:3px 0;padding:5px 8px;background:#f4f6f8;border-radius:7px;font-size:12.5px}
+.pick-summary{margin:10px 0;padding:12px 14px;border:1px dashed #cfd5da;border-radius:10px;min-height:20px}
+.pick-summary .ps-name{font-weight:700;color:#193847}
+.pick-summary .ps-meta{font-size:13px;color:#3a4750;margin:3px 0 8px}
+.pick-fallback{margin:10px 0;border:1px solid var(--line,#e6e9ec);border-radius:10px;padding:8px 12px}
+.pick-fallback summary{cursor:pointer;color:var(--accent,#bb9549);font-weight:600;font-size:13px}

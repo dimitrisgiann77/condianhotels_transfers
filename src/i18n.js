@@ -3,6 +3,7 @@ const DICT = {
     // nav
     home: 'Αρχική', my_declaration: 'Τα Pick up μου', evaluation: 'Αξιολόγηση', profile: 'Προφίλ',
     logout: 'Έξοδος', program: 'Πρόγραμμα',
+    map_tab: 'Χάρτης', choose_on_map: 'Διάλεξε το σημείο παραλαβής σου στον χάρτη', or_list: 'ή διάλεξε από λίστα', seats_word: 'θέσ.', map_view_hint: 'Πινέζες με τις ώρες που περνά το λεωφορείο. Κάνε κλικ για λεπτομέρειες.', selected_pickup: 'Επιλεγμένο pick up', clear_sel: 'Καθαρισμός', no_points_map: 'Δεν υπάρχουν σημεία στον χάρτη ακόμη.',
     notifications: 'Ειδοποιήσεις', no_notifications: 'Δεν υπάρχουν νέες ειδοποιήσεις.', mark_all_read: 'Σήμανση όλων ως διαβασμένα', updates: 'Ενημερώσεις',
     destination: 'Προορισμός', choose_destination: 'Διάλεξε προορισμό', edit: 'Επεξεργασία', delete: 'Διαγραφή',
     confirm_delete: 'Να διαγραφεί αυτό το pick up;', not_declared: 'Χωρίς δήλωση', add_pickup: 'Δήλωσε pick up', no_dest_group: 'Χωρίς προορισμό', deleted_ok: 'Το pick up διαγράφηκε',
@@ -50,6 +51,7 @@ const DICT = {
   en: {
     home: 'Home', my_declaration: 'My pick-ups', evaluation: 'Feedback', profile: 'Profile',
     logout: 'Logout', program: 'Schedule',
+    map_tab: 'Map', choose_on_map: 'Pick your pickup point on the map', or_list: 'or choose from a list', seats_word: 'seats', map_view_hint: 'Pins show the times the bus passes. Click for details.', selected_pickup: 'Selected pick-up', clear_sel: 'Clear', no_points_map: 'No points on the map yet.',
     notifications: 'Notifications', no_notifications: 'No new notifications.', mark_all_read: 'Mark all as read', updates: 'Updates',
     destination: 'Destination', choose_destination: 'Choose destination', edit: 'Edit', delete: 'Delete',
     confirm_delete: 'Delete this pick-up?', not_declared: 'Not set', add_pickup: 'Add pick-up', no_dest_group: 'No destination', deleted_ok: 'Pick-up deleted',

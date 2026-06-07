@@ -93,6 +93,15 @@ async function init() {
   await q(`ALTER TABLE users  ADD COLUMN IF NOT EXISTS favorite_route_id INT REFERENCES routes(id) ON DELETE SET NULL`);
   await q(`ALTER TABLE routes ADD COLUMN IF NOT EXISTS capacity INT NOT NULL DEFAULT 8`);
   await q(`ALTER TABLE routes ADD COLUMN IF NOT EXISTS destination TEXT`);
+  await q(`CREATE TABLE IF NOT EXISTS points (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    lat DOUBLE PRECISION,
+    lng DOUBLE PRECISION,
+    sort_order INT NOT NULL DEFAULT 0,
+    active BOOLEAN NOT NULL DEFAULT TRUE
+  )`);
+  await q(`ALTER TABLE stops ADD COLUMN IF NOT EXISTS point_id INT REFERENCES points(id) ON DELETE SET NULL`);
   await q(`CREATE TABLE IF NOT EXISTS notifications (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -135,6 +144,24 @@ async function init() {
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     resolved_at TIMESTAMPTZ
   )`);
+
+  // one-time: build master pickup points from existing per-route stops
+  try {
+    const fl = await q("SELECT value FROM settings WHERE key='points_migrated'");
+    if (!fl.rows[0]) {
+      const { rows: allStops } = await q('SELECT id,name,lat,lng FROM stops WHERE point_id IS NULL');
+      const groups = {};
+      for (const st of allStops) { const k = (st.name || '').trim().toLowerCase() || ('#' + st.id); (groups[k] = groups[k] || []).push(st); }
+      for (const k of Object.keys(groups)) {
+        const g = groups[k];
+        const geo = g.find(x => x.lat != null && x.lng != null) || g[0];
+        const ins = await q('INSERT INTO points (name,lat,lng) VALUES ($1,$2,$3) RETURNING id', [g[0].name, geo.lat != null ? geo.lat : null, geo.lng != null ? geo.lng : null]);
+        const pid = ins.rows[0].id;
+        for (const st of g) await q('UPDATE stops SET point_id=$1 WHERE id=$2', [pid, st.id]);
+      }
+      await q("INSERT INTO settings (key,value) VALUES ('points_migrated','1') ON CONFLICT (key) DO NOTHING");
+    }
+  } catch (e) { console.error('[db] points migration', e.message); }
 
   // one-time: set all route capacities to 8
   try {

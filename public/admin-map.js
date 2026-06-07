@@ -1,7 +1,7 @@
 (function(){
   var map=null, marker=null;
   function pinIcon(){return L.divIcon({className:'pin-div',html:'<svg width="26" height="26" viewBox="0 0 24 24" fill="#BB9549" stroke="#193847" stroke-width="1.5"><path d="M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5" fill="#fff" stroke="none"/></svg>',iconSize:[26,26],iconAnchor:[13,26]});}
-  function writeLatLng(lat,lng){var a=document.getElementById('stopLat'),b=document.getElementById('stopLng');if(a)a.value=Number(lat).toFixed(6);if(b)b.value=Number(lng).toFixed(6);}
+  function writeLatLng(lat,lng){var a=document.getElementById('pointLat'),b=document.getElementById('pointLng');if(a)a.value=Number(lat).toFixed(6);if(b)b.value=Number(lng).toFixed(6);}
   function setPin(lat,lng){
     if(marker) marker.setLatLng([lat,lng]);
     else { marker=L.marker([lat,lng],{draggable:true,icon:pinIcon()}).addTo(map); marker.on('dragend',function(e){var p=e.target.getLatLng();writeLatLng(p.lat,p.lng);}); }
@@ -9,7 +9,7 @@
   }
   function init(){
     var el=document.getElementById('adminMap'); if(!el || typeof L==='undefined') return;
-    var s=window.ADMIN_STOP; var has=s&&s.lat!=null&&s.lng!=null;
+    var s=window.ADMIN_POINT; var has=s&&s.lat!=null&&s.lng!=null;
     var c=has?[+s.lat,+s.lng]:[35.3387,25.1442];
     map=L.map(el).setView(c, has?15:11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);

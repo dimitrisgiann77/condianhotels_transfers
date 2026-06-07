@@ -314,6 +314,50 @@ async function markNotificationsRead(userId) {
   await q('UPDATE notifications SET is_read=TRUE WHERE user_id=$1 AND is_read=FALSE', [userId]);
 }
 
+async function getPoints(activeOnly = false) {
+  const where = activeOnly ? 'WHERE active=TRUE' : '';
+  const { rows } = await q(`
+    SELECT p.id, p.name, p.lat, p.lng, p.sort_order, p.active, COUNT(s.id)::int AS route_count
+    FROM points p LEFT JOIN stops s ON s.point_id = p.id
+    ${where}
+    GROUP BY p.id, p.name, p.lat, p.lng, p.sort_order, p.active
+    ORDER BY p.sort_order, p.name, p.id`);
+  return rows;
+}
+async function addPoint(name, lat, lng, sort) {
+  const { rows } = await q('INSERT INTO points (name,lat,lng,sort_order) VALUES ($1,$2,$3,$4) RETURNING id',
+    [name, lat != null ? lat : null, lng != null ? lng : null, sort || 0]);
+  return rows[0].id;
+}
+async function updatePoint(id, name, lat, lng) {
+  await q('UPDATE points SET name=$1, lat=$2, lng=$3 WHERE id=$4', [name, lat != null ? lat : null, lng != null ? lng : null, id]);
+  // keep denormalized stop rows in sync so existing maps/print keep working
+  await q('UPDATE stops SET name=$1, lat=$2, lng=$3 WHERE point_id=$4', [name, lat != null ? lat : null, lng != null ? lng : null, id]);
+}
+async function deletePoint(id) {
+  await q('DELETE FROM stops WHERE point_id=$1', [id]);
+  await q('DELETE FROM points WHERE id=$1', [id]);
+}
+async function getMapPoints() {
+  const { rows } = await q(`
+    SELECT s.id AS stop_id, s.pickup_time, s.point_id, s.lat AS s_lat, s.lng AS s_lng, s.name AS s_name, s.sort_order AS s_sort,
+           p.id AS p_id, p.name AS p_name, p.lat AS p_lat, p.lng AS p_lng, p.sort_order AS p_sort,
+           r.id AS route_id, r.name AS route_name, r.destination AS destination, r.capacity AS capacity
+    FROM stops s
+    JOIN routes r ON r.id = s.route_id AND r.active = TRUE
+    LEFT JOIN points p ON p.id = s.point_id
+    ORDER BY s.sort_order, s.id`);
+  const m = {};
+  for (const row of rows) {
+    const key = row.point_id ? 'p' + row.point_id : 's' + row.stop_id;
+    if (!m[key]) m[key] = { key, pointId: row.point_id || null, name: row.p_name || row.s_name,
+      lat: row.p_lat != null ? row.p_lat : row.s_lat, lng: row.p_lng != null ? row.p_lng : row.s_lng, services: [] };
+    m[key].services.push({ stopId: row.stop_id, routeId: row.route_id, routeName: row.route_name,
+      destination: row.destination, time: row.pickup_time || '', capacity: row.capacity });
+  }
+  return Object.values(m);
+}
+
 module.exports = {
   getRoutes, getStops, getAllStops, getRoutesWithStops, getDriverRouteIds,
   getPickups, getPendingStaff, getCounts, getMyDeclaration, getDrivers,
@@ -325,4 +369,5 @@ module.exports = {
   addFeedback, listFeedback, setFeedbackStatus, countOpenFeedback,
   getRouteDriverIds, getFutureDeclUserIds, deleteDeclaration,
   addNotification, notifyUsers, getNotifications, countUnread, markNotificationsRead,
+  getPoints, addPoint, updatePoint, deletePoint, getMapPoints,
 };

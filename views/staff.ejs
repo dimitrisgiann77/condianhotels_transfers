@@ -6,6 +6,7 @@
   <div class="tabs" id="staffTabs">
     <button type="button" data-tab="cal" class="active"><%= t('calendar') %></button>
     <button type="button" data-tab="declare"><%= t('declare') %></button>
+    <button type="button" data-tab="map"><%= t('map_tab') %></button>
     <button type="button" data-tab="mine"><%= t('my_declarations') %></button>
   </div>
 
@@ -32,25 +33,36 @@
       <form method="post" action="/staff" id="declForm">
         <input type="hidden" name="work_date" value="<%= workDate %>" />
         <input type="hidden" name="status" value="work" />
-        <div id="workFields">
-          <div class="step-label">1 · <%= t('destination') %></div>
-          <select id="destSel" onchange="fillRoutes()">
-            <option value=""><%= t('choose_destination') %></option>
-          </select>
+        <input type="hidden" name="route_id" id="routeInput" value="<%= mine && mine.route_id ? mine.route_id : '' %>" />
+        <input type="hidden" name="stop_id" id="stopInput" value="<%= mine && mine.stop_id ? mine.stop_id : '' %>" />
 
-          <div class="step-label">2 · <%= t('route') %></div>
-          <select name="route_id" id="routeSel" onchange="fillStops();showSeats()">
-            <option value=""><%= t('choose_route') %></option>
-          </select>
+        <p class="muted small"><%= t('choose_on_map') %></p>
+        <div id="pickMap" class="map"></div>
+        <div id="pickSummary" class="pick-summary"><span class="muted"><%= t('choose_on_map') %></span></div>
 
-          <div class="step-label">3 · <%= t('stop') %></div>
-          <select name="stop_id" id="stopSel" onchange="showTime()"><option value=""><%= t('choose_stop') %></option></select>
+        <details class="pick-fallback">
+          <summary><%= t('or_list') %></summary>
+          <label><%= t('stop') %></label>
+          <select id="fbPoint" onchange="fbFillSvc()"><option value=""><%= t('choose_stop') %></option></select>
+          <label><%= t('route') %></label>
+          <select id="fbSvc" onchange="fbPick()"><option value=""><%= t('choose_route') %></option></select>
+        </details>
 
-          <div class="timebox"><%= t('pickup_time') %>: <b id="timeOut">—</b></div>
-          <div class="timebox"><%= t('available_seats') %>: <b id="seatsOut">—</b></div>
-        </div>
-        <button class="btn primary" type="submit"><%= t('submit_decl') %></button>
+        <button class="btn primary" type="submit" id="declSubmit"><%= t('submit_decl') %></button>
       </form>
+    </div>
+  </div>
+
+  <!-- ΧΑΡΤΗΣ (overview) -->
+  <div class="tab" id="tab-map">
+    <div class="card">
+      <h1><%= t('map_tab') %></h1>
+      <p class="muted small"><%= t('map_view_hint') %></p>
+      <% if (!mapPoints || mapPoints.length===0) { %>
+        <p class="muted"><%= t('no_points_map') %></p>
+      <% } else { %>
+        <div id="viewMap" class="map map-tall"></div>
+      <% } %>
     </div>
   </div>
 
@@ -80,57 +92,55 @@
     </div>
   </div>
 
+  <script src="/pickup-map.js"></script>
   <script>
-    const ROUTES = <%- JSON.stringify(routes) %>;
-    const MINE = <%- JSON.stringify(mine || null) %>;
+    const MAP_POINTS = <%- JSON.stringify(mapPoints || []) %>;
     const USAGE = <%- JSON.stringify(usage || {}) %>;
-    const FAVORITE = <%- JSON.stringify(favorite || null) %>;
-    const FAVORITE_STOP = <%- JSON.stringify(favoriteStop || null) %>;
-    const T_CHOOSE_STOP = "<%= t('choose_stop') %>";
-    const T_CHOOSE_ROUTE = "<%= t('choose_route') %>";
-    const T_FULL = "<%= t('full') %>";
-    const T_NO_DEST = "<%= t('no_dest_group') %>";
-    const NONE = '__none__';
-    function destKey(r){ return (r.destination && String(r.destination).trim()) ? String(r.destination).trim() : NONE; }
-    function rem(r){ const used=USAGE[r.id]||0; const mineHere=MINE&&MINE.status==='work'&&String(MINE.route_id)===String(r.id); return Math.max(0, r.capacity-used+(mineHere?1:0)); }
+    const MINE = <%- JSON.stringify(mine || null) %>;
+    const T = { full: "<%= t('full') %>", seats: "<%= t('seats_word') %>", choose:"<%= t('choose_on_map') %>", route:"<%= t('choose_route') %>", stop:"<%= t('choose_stop') %>" };
 
-    function fillDestinations(){
-      const sel=document.getElementById('destSel');
-      const keys=[]; ROUTES.forEach(r=>{const k=destKey(r); if(keys.indexOf(k)<0)keys.push(k);});
-      keys.forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=(k===NONE?T_NO_DEST:k); sel.appendChild(o); });
+    function svcByStop(stopId){ for(const p of MAP_POINTS){ for(const s of (p.services||[])){ if(String(s.stopId)===String(stopId)) return {point:p, svc:s}; } } return null; }
+    function seatsOf(svc){ const used=USAGE[svc.routeId]||0; const mineHere=MINE&&MINE.stop_id&&String(MINE.stop_id)===String(svc.stopId); return Math.max(0,(svc.capacity||8)-used+(mineHere?1:0)); }
+    function setSummary(stopId){
+      const box=document.getElementById('pickSummary'); const f=svcByStop(stopId);
+      if(!f){ box.innerHTML='<span class="muted">'+T.choose+'</span>'; return; }
+      const s=f.svc; const seats=seatsOf(s);
+      box.innerHTML='<div class="ps-name">📍 '+esc(f.point.name)+'</div><div class="ps-meta">'+(s.destination?'<b>'+esc(s.destination)+'</b> · ':'')+esc(s.routeName)+' — <b>'+esc(s.time||'')+'</b> · '+seats+' '+T.seats+'</div><button type="button" class="btn small" onclick="clearSel()">'+"<%= t('clear_sel') %>"+'</button>';
     }
-    function fillRoutes(preRouteId){
-      const dk=document.getElementById('destSel').value;
-      const sel=document.getElementById('routeSel'); sel.innerHTML='<option value="">'+T_CHOOSE_ROUTE+'</option>';
-      ROUTES.filter(r=>destKey(r)===dk).forEach(r=>{
-        const full=rem(r)<=0; const mineHere=MINE&&MINE.status==='work'&&String(MINE.route_id)===String(r.id);
-        const o=document.createElement('option'); o.value=r.id; o.textContent=r.name+(full?(' — '+T_FULL):'');
-        if(full&&!mineHere)o.disabled=true;
-        if(preRouteId&&String(preRouteId)===String(r.id))o.selected=true;
-        sel.appendChild(o);
-      });
-      fillStops(); showSeats();
+    function esc(x){return String(x==null?'':x).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+    function select(routeId, stopId){
+      document.getElementById('routeInput').value=routeId||'';
+      document.getElementById('stopInput').value=stopId||'';
+      setSummary(stopId);
+      // sync fallback
+      const f=svcByStop(stopId);
+      if(f){ const fp=document.getElementById('fbPoint'); fp.value=f.point.key; fbFillSvc(); document.getElementById('fbSvc').value=String(stopId); }
     }
-    function showSeats(){
-      const rid=document.getElementById('routeSel').value; const r=ROUTES.find(x=>String(x.id)===String(rid)); const out=document.getElementById('seatsOut');
-      if(!r){out.textContent='—';return;}
-      out.textContent=rem(r)+' / '+r.capacity+(rem(r)===0?' (πλήρες)':'');
+    function clearSel(){ document.getElementById('routeInput').value=''; document.getElementById('stopInput').value=''; setSummary(null); var fp=document.getElementById('fbPoint'); if(fp)fp.value=''; fbFillSvc(); }
+
+    // fallback list
+    function fbInit(){
+      const fp=document.getElementById('fbPoint');
+      MAP_POINTS.forEach(p=>{ const o=document.createElement('option'); o.value=p.key; o.textContent=p.name; fp.appendChild(o); });
     }
-    function fillStops(pre){
-      const rid=document.getElementById('routeSel').value; const sel=document.getElementById('stopSel'); sel.innerHTML='<option value="">'+T_CHOOSE_STOP+'</option>';
-      const r=ROUTES.find(x=>String(x.id)===String(rid));
-      if(r)r.stops.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name+(s.pickup_time?' — '+s.pickup_time:'');o.dataset.time=s.pickup_time||'';if(pre&&String(pre)===String(s.id))o.selected=true;sel.appendChild(o);});
-      showTime();
+    function fbFillSvc(){
+      const fp=document.getElementById('fbPoint').value; const fs=document.getElementById('fbSvc'); fs.innerHTML='<option value="">'+T.route+'</option>';
+      const p=MAP_POINTS.find(x=>x.key===fp); if(!p)return;
+      p.services.forEach(s=>{ const seats=seatsOf(s); const o=document.createElement('option'); o.value=s.stopId; o.textContent=(s.destination?s.destination+' · ':'')+s.routeName+' — '+(s.time||'')+' · '+seats+' '+T.seats+(seats<=0?' ('+T.full+')':''); if(seats<=0)o.disabled=true; o.dataset.r=s.routeId; fs.appendChild(o); });
     }
-    function showTime(){const sel=document.getElementById('stopSel');const tm=sel.options[sel.selectedIndex]&&sel.options[sel.selectedIndex].dataset.time;document.getElementById('timeOut').textContent=tm||'—';}
+    function fbPick(){ const fs=document.getElementById('fbSvc'); const opt=fs.options[fs.selectedIndex]; if(!opt||!opt.value){ return; } select(opt.dataset.r, opt.value); }
+
+    let pickMap=null, viewMap=null;
     (function init(){
-      fillDestinations();
-      let preR=null, preS=null;
-      if (MINE && MINE.route_id) { preR=MINE.route_id; preS=MINE.stop_id; }
-      else if (FAVORITE) { preR=FAVORITE; preS=FAVORITE_STOP; }
-      if (preR){ const r=ROUTES.find(x=>String(x.id)===String(preR)); if(r){ document.getElementById('destSel').value=destKey(r); fillRoutes(preR); fillStops(preS); showSeats(); } }
+      fbInit();
+      if (MINE && MINE.stop_id) setSummary(MINE.stop_id); else setSummary(null);
       var tabs=document.querySelectorAll('#staffTabs button');var secs=document.querySelectorAll('.tab');
-      function act(n){tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===n));secs.forEach(s=>s.classList.toggle('active',s.id==='tab-'+n));}
+      function act(n){
+        tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===n));
+        secs.forEach(s=>s.classList.toggle('active',s.id==='tab-'+n));
+        if(n==='declare'){ if(!pickMap){ pickMap=createPickupMap({elId:'pickMap', points:MAP_POINTS, mode:'select', usage:USAGE, mineStopId:MINE&&MINE.stop_id, seatsWord:T.seats, fullWord:T.full, onSelect:select}); } else pickMap.refresh(); }
+        if(n==='map'){ if(document.getElementById('viewMap')){ if(!viewMap){ viewMap=createPickupMap({elId:'viewMap', points:MAP_POINTS, mode:'view', seatsWord:T.seats}); } else viewMap.refresh(); } }
+      }
       tabs.forEach(b=>b.addEventListener('click',()=>act(b.dataset.tab)));
       var qp=new URLSearchParams(location.search);var t=qp.get('tab');
       if(!t){ t=(qp.has('saved')||qp.has('error'))?'declare':'cal'; }

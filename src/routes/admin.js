@@ -26,9 +26,11 @@ router.get('/', async (req, res) => {
   const questions = await data.listQuestions();
   const emailLog = await data.getEmailLog();
   const feedback = await data.listFeedback();
+  const points = await data.getPoints();
   res.render('admin', {
     routes, users, drivers, driverRoutes, colors: brand.getColors(), pendingUsers, regCode, questions,
-    supervisors, hotels, editUser, pdf: brand.getPdf(), emailLog, feedback,
+    supervisors, hotels, editUser, pdf: brand.getPdf(), emailLog, feedback, points,
+    editPoint: req.query.point_edit ? (await data.getPoints()).find(p=>String(p.id)===req.query.point_edit) : null,
     allRoutes: routes,
     msg: req.query.msg || null,
     tomorrow: tomorrowStr(),
@@ -103,25 +105,49 @@ router.post('/route/:id/toggle', async (req, res) => {
 });
 
 // ----- Stops -----
+async function pointById(id) { return (await q('SELECT * FROM points WHERE id=$1', [id])).rows[0]; }
+// add a pickup point (master, on the map) — reused across routes
+router.post('/point', async (req, res) => {
+  const name = (req.body.name || '').trim();
+  if (name) await data.addPoint(name, req.body.lat ? parseFloat(req.body.lat) : null, req.body.lng ? parseFloat(req.body.lng) : null, parseInt(req.body.sort_order || '0', 10));
+  res.redirect('/admin?tab=points&msg=' + encodeURIComponent('Το σημείο προστέθηκε'));
+});
+router.post('/point/:id', async (req, res) => {
+  const name = (req.body.name || '').trim();
+  if (name) await data.updatePoint(req.params.id, name, req.body.lat ? parseFloat(req.body.lat) : null, req.body.lng ? parseFloat(req.body.lng) : null);
+  res.redirect('/admin?tab=points&msg=' + encodeURIComponent('Το σημείο ενημερώθηκε'));
+});
+router.post('/point/:id/delete', async (req, res) => {
+  await data.deletePoint(req.params.id);
+  res.redirect('/admin?tab=points&msg=' + encodeURIComponent('Το σημείο διαγράφηκε'));
+});
+// add a point to a route (= a stop with a time)
 router.post('/stop', async (req, res) => {
-  const { route_id, name, pickup_time, sort_order, lat, lng } = req.body;
-  await q(`INSERT INTO stops (route_id,name,pickup_time,sort_order,lat,lng)
-           VALUES ($1,$2,$3,$4,$5,$6)`,
-    [route_id, name, pickup_time || null, parseInt(sort_order || '0', 10),
-     lat ? parseFloat(lat) : null, lng ? parseFloat(lng) : null]);
-  res.redirect('/admin?msg=' + encodeURIComponent('Η στάση προστέθηκε'));
+  const { route_id, point_id, pickup_time, sort_order } = req.body;
+  const pt = point_id ? await pointById(point_id) : null;
+  if (route_id && pt) {
+    await q(`INSERT INTO stops (route_id,point_id,name,pickup_time,sort_order,lat,lng)
+             VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [route_id, pt.id, pt.name, pickup_time || null, parseInt(sort_order || '0', 10),
+       pt.lat != null ? pt.lat : null, pt.lng != null ? pt.lng : null]);
+  }
+  res.redirect('/admin?tab=routes&msg=' + encodeURIComponent('Η στάση προστέθηκε'));
 });
 router.post('/stop/:id', async (req, res) => {
-  const { name, pickup_time, sort_order, lat, lng, route_id } = req.body;
-  await q(`UPDATE stops SET name=$1, pickup_time=$2, sort_order=$3, lat=$4, lng=$5, route_id=COALESCE($6, route_id) WHERE id=$7`,
-    [name, pickup_time || null, parseInt(sort_order || '0', 10),
-     lat ? parseFloat(lat) : null, lng ? parseFloat(lng) : null,
-     route_id ? parseInt(route_id, 10) : null, req.params.id]);
-  res.redirect('/admin?msg=' + encodeURIComponent('Η στάση ενημερώθηκε'));
+  const { point_id, pickup_time, sort_order, route_id } = req.body;
+  const pt = point_id ? await pointById(point_id) : null;
+  if (pt) {
+    await q(`UPDATE stops SET point_id=$1, name=$2, lat=$3, lng=$4, pickup_time=$5, sort_order=$6, route_id=COALESCE($7, route_id) WHERE id=$8`,
+      [pt.id, pt.name, pt.lat != null ? pt.lat : null, pt.lng != null ? pt.lng : null,
+       pickup_time || null, parseInt(sort_order || '0', 10), route_id ? parseInt(route_id, 10) : null, req.params.id]);
+  } else {
+    await q(`UPDATE stops SET pickup_time=$1, sort_order=$2 WHERE id=$3`, [pickup_time || null, parseInt(sort_order || '0', 10), req.params.id]);
+  }
+  res.redirect('/admin?tab=routes&msg=' + encodeURIComponent('Η στάση ενημερώθηκε'));
 });
 router.post('/stop/:id/delete', async (req, res) => {
   await q('DELETE FROM stops WHERE id=$1', [req.params.id]);
-  res.redirect('/admin?msg=' + encodeURIComponent('Η στάση διαγράφηκε'));
+  res.redirect('/admin?tab=routes&msg=' + encodeURIComponent('Η στάση διαγράφηκε'));
 });
 
 // ----- Users -----

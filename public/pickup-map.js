@@ -1,5 +1,6 @@
 (function(){
-  var PALETTE=['#BB9549','#3CA9AF','#3C56A6','#C0504D','#1d8a4c','#8e44ad','#e67e22','#2c7fb8','#d81b60','#00897b','#5d4037','#0277bd'];
+  function CFG(){return window.MAP_CFG||{tile:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',subdomains:'abc',attribution:'© OpenStreetMap',pin:'#193847'};}
+  function brand(){return CFG().pin||'#193847';}
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function times(pt){var t=[];(pt.services||[]).forEach(function(s){if(s.time&&t.indexOf(s.time)<0)t.push(s.time);});t.sort();return t.join(' / ');}
   function pinIcon(idx,color,name,timeLabel){
@@ -17,7 +18,7 @@
     var pts=(o.points||[]).filter(function(p){return p.lat!=null&&p.lng!=null;});
     var center=pts.length?[+pts[0].lat,+pts[0].lng]:[35.3387,25.1442];
     var map=L.map(el).setView(center, pts.length?13:11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+    var cfg=CFG(); L.tileLayer(cfg.tile,{maxZoom:19,subdomains:cfg.subdomains||'abc',attribution:cfg.attribution}).addTo(map);
     var bounds=[];
     function seats(svc){var used=(o.usage&&o.usage[svc.routeId])||0;var mineHere=o.mineStopId&&String(o.mineStopId)===String(svc.stopId);return Math.max(0, (svc.capacity||8)-used+(mineHere?1:0));}
     function popupHtml(pt,idx){
@@ -30,10 +31,10 @@
         }
         return '<div class="pk-svc-v">'+lbl+'</div>';
       }).join('');
-      return '<div class="pk-pop"><b><span class="pk-badge" style="background:'+PALETTE[idx%PALETTE.length]+'">'+(idx+1)+'</span> '+esc(pt.name)+'</b>'+rows+'</div>';
+      return '<div class="pk-pop"><b><span class="pk-badge" style="background:'+brand()+'">'+(idx+1)+'</span> '+esc(pt.name)+'</b>'+rows+'</div>';
     }
     pts.forEach(function(pt,idx){
-      var color=PALETTE[idx%PALETTE.length];
+      var color=brand();
       var m=L.marker([+pt.lat,+pt.lng],{icon:pinIcon(idx,color,pt.name,times(pt))}).addTo(map);
       m.bindPopup(popupHtml(pt,idx));
       m.on('popupopen',function(e){

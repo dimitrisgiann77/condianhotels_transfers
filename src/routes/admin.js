@@ -117,6 +117,18 @@ router.post('/point/:id', async (req, res) => {
   if (name) await data.updatePoint(req.params.id, name, req.body.lat ? parseFloat(req.body.lat) : null, req.body.lng ? parseFloat(req.body.lng) : null);
   res.redirect('/admin?tab=points&msg=' + encodeURIComponent('Το σημείο ενημερώθηκε'));
 });
+router.post('/points/from-hotels', async (req, res) => {
+  try {
+    const hotels = await data.getHotels();
+    const existing = (await data.getPoints()).map(p => (p.name || '').trim().toLowerCase());
+    let added = 0;
+    for (const h of hotels) {
+      const name = (h || '').trim();
+      if (name && existing.indexOf(name.toLowerCase()) < 0) { await data.addPoint(name, null, null, 0); added++; }
+    }
+    res.redirect('/admin?tab=points&msg=' + encodeURIComponent(added ? ('Προστέθηκαν ' + added + ' σημεία από ξενοδοχεία') : 'Όλα τα ξενοδοχεία υπάρχουν ήδη ως σημεία'));
+  } catch (e) { res.redirect('/admin?tab=points&msg=' + encodeURIComponent('Σφάλμα')); }
+});
 router.post('/point/:id/delete', async (req, res) => {
   await data.deletePoint(req.params.id);
   res.redirect('/admin?tab=points&msg=' + encodeURIComponent('Το σημείο διαγράφηκε'));

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/brand.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script>window.MAP_CFG = <%- JSON.stringify(typeof mapCfg!=='undefined' ? mapCfg : {tile:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',subdomains:'abc',attribution:'© OpenStreetMap',pin:'#193847'}) %>;</script>
   <link rel="icon" href="/brand/favicon" />
   <meta property="og:title" content="<%= theme.app_title %> — Transfers" />
   <meta property="og:type" content="website" />

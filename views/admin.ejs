@@ -174,6 +174,11 @@
     <div class="card">
       <h2>Σημεία παραλαβής (κοινά)</h2>
       <p class="muted small">Όρισε κάθε σημείο <b>μία φορά</b> με τη θέση του στον χάρτη. Μετά μπες στην καρτέλα «Δρομολόγια» και πρόσθεσε το σημείο σε όποια δρομολόγια θέλεις, με τη δική του ώρα.</p>
+      <p class="muted small">💡 Τα ξενοδοχεία είναι σταθερά σημεία: όταν τοποθετήσεις π.χ. το SRG στον χάρτη, χρησιμοποιείται <b>το ίδιο σημείο σε όλα τα δρομολόγια</b>.</p>
+      <form method="post" action="/admin/points/from-hotels" class="inline" style="margin-bottom:10px">
+        <button class="btn">Δημιουργία σημείων από ξενοδοχεία</button>
+        <span class="muted small">Φτιάχνει ένα σημείο για κάθε ξενοδοχείο (αν δεν υπάρχει ήδη) — μετά βάλε του θέση στον χάρτη.</span>
+      </form>
       <% if (!points || points.length===0) { %><p class="muted">Δεν υπάρχουν σημεία ακόμη.</p><% } else { %>
         <table class="tbl">
           <thead><tr><th>Σημείο</th><th>Θέση</th><th>Σε # δρομολόγια</th><th></th></tr></thead>
@@ -492,6 +497,15 @@
           </div>
           <div><label>Μέγεθος βάσης (px)</label><input type="number" id="font_size" name="font_size" min="11" max="22" value="<%= theme.font_size %>" oninput="pv()"></div>
           <div><label>Στρογγυλεμένες γωνίες (px)</label><input type="number" id="radius" name="radius" min="0" max="30" value="<%= theme.radius %>" oninput="pv()"></div>
+          <div><label>Στυλ χάρτη</label>
+            <select name="map_style">
+              <% var ms=theme.map_style||'gray'; %>
+              <option value="gray" <%= ms==='gray'?'selected':'' %>>Ασπρόμαυρος (καθαρός)</option>
+              <option value="osm" <%= ms==='osm'?'selected':'' %>>Κανονικός (έγχρωμος)</option>
+              <option value="voyager" <%= ms==='voyager'?'selected':'' %>>Απαλός (λίγο χρώμα)</option>
+              <option value="dark" <%= ms==='dark'?'selected':'' %>>Σκούρος</option>
+            </select>
+          </div>
           <div><label>Ύψος λογοτύπου μπάρας (px)</label><input type="number" id="logo_height" name="logo_height" min="20" max="120" value="<%= theme.logo_height %>" oninput="pv()"></div>
           <div><label>Ύψος λογοτύπου σύνδεσης (px)</label><input type="number" id="login_logo_height" name="login_logo_height" min="32" max="200" value="<%= theme.login_logo_height %>"></div>
         </div>

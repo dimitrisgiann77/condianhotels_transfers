@@ -17,6 +17,18 @@ const avatarUpload = multer({ storage: multer.memoryStorage(), limits: { fileSiz
 const { requireLogin, requireRole, homeForRole } = require('./auth');
 const { tomorrowStr, prettyDate, todayStr, mondayOf, weekDays, DAYNAMES, datePlus } = require('./util');
 
+const MAP_STYLES = {
+  osm:     { tile: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', subdomains: 'abc',  attribution: '© OpenStreetMap' },
+  gray:    { tile: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', subdomains: 'abcd', attribution: '© OpenStreetMap, © CARTO' },
+  voyager: { tile: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', subdomains: 'abcd', attribution: '© OpenStreetMap, © CARTO' },
+  dark:    { tile: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', subdomains: 'abcd', attribution: '© OpenStreetMap, © CARTO' },
+};
+function mapCfgFor(theme) {
+  const st = (theme && theme.map_style) || 'gray';
+  const base = MAP_STYLES[st] || MAP_STYLES.gray;
+  return { style: st, tile: base.tile, subdomains: base.subdomains, attribution: base.attribution, pin: (theme && theme.primary) || '#193847' };
+}
+
 const app = express();
 const APP_TITLE = 'CONDIAN Hotels — Summer Transfers 2026';
 const APP_VERSION = (() => { try { return require('../package.json').version; } catch (e) { return '?'; } })();
@@ -41,6 +53,7 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   res.locals.mapsKey = process.env.GOOGLE_MAPS_API_KEY || '';
   res.locals.theme = brand.getTheme();
+  res.locals.mapCfg = mapCfgFor(res.locals.theme);
   res.locals.publicUrl = process.env.PUBLIC_URL || '';
   res.locals.appVersion = APP_VERSION;
   res.locals.appCommit = APP_COMMIT;

@@ -14,7 +14,7 @@ const THEME_DEFAULTS = {
   th_bg: '#193847', th_text: '#ffffff', footer_text: '#99a3a8',
   font: 'Arial, Helvetica, sans-serif', font_size: '15', radius: '10', logo_height: '38', login_logo_height: '64',
   app_title: 'CONDIAN', footer_label: 'CONDIAN Hotels - All rights reserved 2026',
-  show_title: '1', login_message: '', custom_css: '',
+  show_title: '1', login_message: '', custom_css: '', map_style: 'gray',
 };
 
 const PDF_DEFAULTS = {
